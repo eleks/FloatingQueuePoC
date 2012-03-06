@@ -32,6 +32,7 @@ namespace FloatingQueueServer
             var p = new OptionSet()
                     {
                         {"p|port=", v => configuration.Port = int.TryParse(v, out port) ? port : 80},
+                        {"m|master", v => configuration.IsMaster = !string.IsNullOrEmpty(v) }
                     };
             p.Parse(args);
             return configuration;
@@ -40,12 +41,13 @@ namespace FloatingQueueServer
         private static void RunHost()
         {
             var serviceType = typeof (QueueService);
-            var serviceUri = new Uri(string.Format("http://localhost:{0}/", Server.Resolve<IConfiguration>().Port));
+            var serviceUri = new Uri(string.Format("http://localhost:{0}/", Server.Configuration.Port));
 
             var host = new ServiceHost(serviceType, serviceUri);
 
             host.Open();
 
+            Server.Log.Info("I am {0}", Server.Configuration.IsMaster ? "master" : "slave");
             Server.Log.Info("Listening:");
             foreach (var uri in host.BaseAddresses)
             {
