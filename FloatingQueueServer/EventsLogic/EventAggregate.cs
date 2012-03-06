@@ -17,7 +17,8 @@ namespace FloatingQueue.Server.EventsLogic
         private readonly List<object> m_InternalStorage = new List<object>();
         private readonly object m_SyncRoot = new object();
         private readonly string m_AggregateId;
-		// consider avoding aggrigate id in this class
+
+        // consider avoding aggregate id in this class
         public EventAggregate(string aggregateId)
         {
             m_AggregateId = aggregateId;
@@ -31,7 +32,7 @@ namespace FloatingQueue.Server.EventsLogic
                 {
                     throw new OptimisticLockException();
                 }
-                {   // todo: wrap this into transaction
+                {   // todo: wrap this into transaction, abstract away from here
                     m_InternalStorage.Add(e);
                     if (Core.Server.Configuration.IsMaster)
                         Core.Server.Broadcast(m_AggregateId, version, e);
@@ -43,7 +44,7 @@ namespace FloatingQueue.Server.EventsLogic
         {
             lock (m_SyncRoot)
             {
-                if(version < m_InternalStorage.Count)
+                if (version < m_InternalStorage.Count)
                 {
                     next = m_InternalStorage[version];
                     return true;

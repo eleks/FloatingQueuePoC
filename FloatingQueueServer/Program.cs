@@ -11,10 +11,6 @@ namespace FloatingQueue.Server
 {
     class Program
     {
-        // example calling
-        // -p=8080 -m -n=http://localhost:8081;http://localhost:8082
-        // -p=8081 -n=http://localhost:8080$master;http://localhost:8082
-
         static void Main(string[] args)
         {
             if (args == null || args.Length == 0)
@@ -58,7 +54,7 @@ namespace FloatingQueue.Server
             p.Parse(args);
 
             // validate args
-            int mastersCount = configuration.Nodes.Where(n => n.IsMaster).Count() + (configuration.IsMaster ? 1 : 0);
+            int mastersCount = configuration.Nodes.Count(n => n.IsMaster) + (configuration.IsMaster ? 1 : 0);
             if (mastersCount != 1)
                 throw new BadConfigurationException("There must be exactly 1 master node");
 
@@ -68,7 +64,7 @@ namespace FloatingQueue.Server
         private static void RunHost()
         {
             var serviceType = typeof(QueueService);
-            var serviceUri = new Uri(string.Format("http://localhost:{0}/", Core.Server.Configuration.Port));
+            var serviceUri = new Uri(string.Format("net.tcp://localhost:{0}/", Core.Server.Configuration.Port));
 
             var host = new ServiceHost(serviceType, serviceUri);
 

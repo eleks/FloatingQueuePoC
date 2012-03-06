@@ -13,7 +13,7 @@ namespace FloatingQueue.ServiceProxy
         public ManualQueueProxy(string address)
         {
             m_EndpointAddress = new EndpointAddress(address);
-            m_Binding = new BasicHttpBinding();
+            m_Binding = new NetTcpBinding();
             CreateClient();
         }
 

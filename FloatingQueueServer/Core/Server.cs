@@ -29,6 +29,8 @@ namespace FloatingQueue.Server.Core
             return ServicesContainer.Resolve<T>();
         }
 
+        //todo: cleanup this code.
+
         // todo: consider synchronizations issues
         private static readonly List<ManualQueueProxy> m_Siblings = new List<ManualQueueProxy>();
 
