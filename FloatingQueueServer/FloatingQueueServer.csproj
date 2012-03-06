@@ -61,6 +61,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AggregateRepository.cs" />
+    <Compile Include="Core\ComponentsManager.cs" />
+    <Compile Include="Core\Logger.cs" />
+    <Compile Include="Core\Server.cs" />
     <Compile Include="OptimisticLockException.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

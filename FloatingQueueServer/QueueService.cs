@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.ServiceModel;
 using System.Text;
+using FloatingQueueServer.Core;
 
 namespace FloatingQueueServer
 {
@@ -21,7 +22,7 @@ namespace FloatingQueueServer
     {
         public void Push(string aggregateId, int version, object e)
         {
-            Console.WriteLine("push {0} {1} {2}", aggregateId, version, e);
+            Server.Log.Info("Command: push {0} {1} {2}", aggregateId, version, e);
             var aggregate = GetEventAggregate(aggregateId);
             aggregate.Push(version, e);
         }

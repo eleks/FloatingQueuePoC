@@ -4,6 +4,7 @@ using System.Linq;
 using System.ServiceModel;
 using System.ServiceModel.Description;
 using System.Text;
+using FloatingQueueServer.Core;
 
 namespace FloatingQueueServer
 {
@@ -11,7 +12,15 @@ namespace FloatingQueueServer
     {
         static void Main(string[] args)
         {
+            Initialize();
             RunHost();
+        }
+
+        private static void Initialize()
+        {
+            var componentsManager = new ComponentsManager();
+            var container = componentsManager.GetContainer();
+            Server.Init(container);
         }
 
         private static void RunHost()
@@ -23,13 +32,13 @@ namespace FloatingQueueServer
 
             host.Open();
 
-            Console.WriteLine("Listening:");
+            Server.Log.Info("Listening:");
             foreach (var uri in host.BaseAddresses)
             {
-                Console.WriteLine("\t{0}", uri);
+                Server.Log.Info("\t{0}", uri);
             }
 
-            Console.WriteLine("Press <ENTER> to terminate Host");
+            Server.Log.Info("Press <ENTER> to terminate Host");
             Console.ReadLine();
         }
     }
