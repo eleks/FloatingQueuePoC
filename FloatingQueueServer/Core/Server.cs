@@ -19,5 +19,10 @@ namespace FloatingQueueServer.Core
         {
             get { return ServicesContainer.Resolve<ILogger>(); }
         }
+
+        public static T Resolve<T>()
+        {
+            return ServicesContainer.Resolve<T>();
+        }
     }
 }
