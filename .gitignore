@@ -7,3 +7,10 @@ FloatingQueueServer/bin
 FloatingQueueServer/obj
 TestClient/bin
 TestClient/obj
+bin
+obj
+*.svcinfo
+*.disco
+*.xsd
+*.wsdl
+*.svcmap

@@ -1,57 +1,46 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.ServiceModel;
-using System.Text;
+using FloatingQueue.ServiceProxy;
 
-namespace TestClient
+namespace FloatingQueue.TestClient
 {
     class Program
     {
         static void Main(string[] args)
         {
-            var client = new QueueServiceClient();
-            try
+            var proxy = new QueueServiceProxy();
+            bool work = true;
+            while (work)
             {
-                bool work = true;
-                while (work)
+                var str = Console.ReadLine();
+                var atoms = str.Split(new[] { ' ' }, 4, StringSplitOptions.RemoveEmptyEntries);
+                if (atoms.Length > 0)
                 {
-                    var str = Console.ReadLine();
-                    var atoms = str.Split(new[] { ' ' }, 4, StringSplitOptions.RemoveEmptyEntries);
-                    if(atoms.Length > 0)
+                    var cmd = atoms[0];
+                    switch (cmd.ToLower())
                     {
-                        var cmd = atoms[0];
-                        switch (cmd.ToLower())
-                        {
-                            case "push":
-                                DoPush(client, atoms.Skip(1).ToArray());
-                                break;
-                            case "exit":
-                                work = false;
-                                break;
-                            default:
-                                Console.WriteLine("Unknown command");
-                                ShowUsage();
-                                break;
-                        }
+                        case "push":
+                            DoPush(proxy, atoms.Skip(1).ToArray());
+                            break;
+                        case "exit":
+                            work = false;
+                            break;
+                        default:
+                            Console.WriteLine("Unknown command");
+                            ShowUsage();
+                            break;
                     }
                 }
             }
-            finally
-            {
-                if (client.State == CommunicationState.Faulted)
-                    client.Abort();
-                client.Close();
-            }
         }
 
-        static void DoPush(QueueServiceClient client, string[] args)
+        static void DoPush(QueueServiceProxy proxy, string[] args)
         {
             try
             {
-                client.Push(args[0], int.Parse(args[1]), args[2]);
+                proxy.Push(args[0], int.Parse(args[1]), args[2]);
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 Console.WriteLine(ex);
                 ShowUsage();

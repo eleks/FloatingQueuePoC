@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace FloatingQueueServer
+namespace FloatingQueue.Server.Exceptions
 {
     public class OptimisticLockException : ApplicationException
     {

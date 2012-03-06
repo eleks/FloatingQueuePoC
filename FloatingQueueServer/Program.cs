@@ -1,13 +1,13 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.ServiceModel;
-using System.Text;
-using FloatingQueueServer.Core;
+using FloatingQueue.Server.Core;
+using FloatingQueue.Server.Exceptions;
+using FloatingQueue.Server.Service;
+using FloatingQueue.ServiceProxy;
 using NDesk.Options;
 
-namespace FloatingQueueServer
+namespace FloatingQueue.Server
 {
     class Program
     {
@@ -24,6 +24,9 @@ namespace FloatingQueueServer
             }
             Initialize(args);
             RunHost();
+
+
+
         }
 
         private static void Initialize(string[] args)
@@ -32,12 +35,12 @@ namespace FloatingQueueServer
 
             var componentsManager = new ComponentsManager();
             var container = componentsManager.GetContainer(configuration);
-            Server.Init(container);
+            Core.Server.Init(container);
         }
 
         private static Configuration ParseConfiguration(string[] args)
         {
-            var configuration = new Configuration {Port = 80};
+            var configuration = new Configuration { Port = 80 };
             int port;
             var p = new OptionSet()
                     {
@@ -66,21 +69,21 @@ namespace FloatingQueueServer
 
         private static void RunHost()
         {
-            var serviceType = typeof (QueueService);
-            var serviceUri = new Uri(string.Format("http://localhost:{0}/", Server.Configuration.Port));
+            var serviceType = typeof(QueueService);
+            var serviceUri = new Uri(string.Format("http://localhost:{0}/", Core.Server.Configuration.Port));
 
             var host = new ServiceHost(serviceType, serviceUri);
 
             host.Open();
 
-            Server.Log.Info("I am {0}", Server.Configuration.IsMaster ? "master" : "slave");
-            Server.Log.Info("Listening:");
+            Core.Server.Log.Info("I am {0}", Core.Server.Configuration.IsMaster ? "master" : "slave");
+            Core.Server.Log.Info("Listening:");
             foreach (var uri in host.BaseAddresses)
             {
-                Server.Log.Info("\t{0}", uri);
+                Core.Server.Log.Info("\t{0}", uri);
             }
 
-            Server.Log.Info("Press <ENTER> to terminate Host");
+            Core.Server.Log.Info("Press <ENTER> to terminate Host");
             Console.ReadLine();
         }
 

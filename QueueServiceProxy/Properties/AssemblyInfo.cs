@@ -1,15 +1,16 @@
 ﻿using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("FloatingQueue.TestClient")]
+[assembly: AssemblyTitle("FloatingQueue.ServiceProxy")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("Eleks")]
-[assembly: AssemblyProduct("FloatingQueue.TestClient")]
-[assembly: AssemblyCopyright("Copyright © Eleks 2012")]
+[assembly: AssemblyCompany("")]
+[assembly: AssemblyProduct("FloatingQueue.ServiceProxy")]
+[assembly: AssemblyCopyright("Copyright ©  2012")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
@@ -19,7 +20,7 @@ using System.Runtime.InteropServices;
 [assembly: ComVisible(false)]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
-[assembly: Guid("4e713949-9e5d-468f-9a40-5ef79b96be17")]
+[assembly: Guid("decf2f67-beaf-4428-86e2-59f5fb75f36f")]
 
 // Version information for an assembly consists of the following four values:
 //

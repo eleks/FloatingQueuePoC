@@ -5,11 +5,11 @@
     <Platform Condition=" '$(Platform)' == '' ">x86</Platform>
     <ProductVersion>8.0.30703</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{843EAB20-29A2-4870-8070-72D16AFB2BF4}</ProjectGuid>
+    <ProjectGuid>{EF17F8D8-82A6-4623-9A99-CEBDA0555C44}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>FloatingQueueServer</RootNamespace>
-    <AssemblyName>FloatingQueueServer</AssemblyName>
+    <RootNamespace>FloatingQueue.TestClient</RootNamespace>
+    <AssemblyName>FloatingQueue.TestClient</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <TargetFrameworkProfile>
     </TargetFrameworkProfile>
@@ -35,24 +35,6 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Autofac">
-      <HintPath>..\packages\Autofac.2.6.1.841\lib\NET40\Autofac.dll</HintPath>
-    </Reference>
-    <Reference Include="Autofac.Configuration">
-      <HintPath>..\packages\Autofac.2.6.1.841\lib\NET40\Autofac.Configuration.dll</HintPath>
-    </Reference>
-    <Reference Include="log4net">
-      <HintPath>..\packages\log4net.2.0.0\lib\net40-full\log4net.dll</HintPath>
-    </Reference>
-    <Reference Include="Moq">
-      <HintPath>..\packages\Moq.4.0.10827\lib\NET40\Moq.dll</HintPath>
-    </Reference>
-    <Reference Include="NDesk.Options">
-      <HintPath>..\packages\NDesk.Options.0.2.1\lib\NDesk.Options.dll</HintPath>
-    </Reference>
-    <Reference Include="nunit.framework">
-      <HintPath>..\packages\NUnit.2.6.0.12054\lib\nunit.framework.dll</HintPath>
-    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.ServiceModel" />
@@ -63,25 +45,17 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AggregateRepository.cs" />
-    <Compile Include="Configuration.cs" />
-    <Compile Include="Exceptions\BadConfigurationException.cs" />
-    <Compile Include="Core\ComponentsManager.cs" />
-    <Compile Include="Core\Logger.cs" />
-    <Compile Include="Core\Server.cs" />
-    <Compile Include="Exceptions\OptimisticLockException.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="QueueService.cs" />
-    <Compile Include="EventAggregate.cs" />
-    <Compile Include="Tests\AggreagateRepositoryTests.cs" />
-    <Compile Include="Tests\EventAggregateTests.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="app.config">
-      <SubType>Designer</SubType>
-    </None>
-    <None Include="packages.config" />
+    <None Include="App.Config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\QueueServiceProxy\FloatingQueue.ServiceProxy.csproj">
+      <Project>{B9221127-6168-44CE-8B31-0962CBB5CD40}</Project>
+      <Name>FloatingQueue.ServiceProxy</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

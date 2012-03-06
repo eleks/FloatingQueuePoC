@@ -1,7 +1,8 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using FloatingQueue.Server.Exceptions;
 
-namespace FloatingQueueServer
+namespace FloatingQueue.Server.EventsLogic
 {
     public interface IEventAggregate
     {

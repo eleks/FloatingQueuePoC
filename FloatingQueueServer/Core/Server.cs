@@ -1,10 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using Autofac;
+﻿using Autofac;
 
-namespace FloatingQueueServer.Core
+namespace FloatingQueue.Server.Core
 {
     public class Server
     {

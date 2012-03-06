@@ -1,7 +1,9 @@
 ﻿using System.Linq;
+using FloatingQueue.Server.EventsLogic;
+using FloatingQueue.Server.Exceptions;
 using NUnit.Framework;
 
-namespace FloatingQueueServer.Tests
+namespace FloatingQueue.Server.Tests
 {
     [TestFixture]
     public class EventAggregateTests

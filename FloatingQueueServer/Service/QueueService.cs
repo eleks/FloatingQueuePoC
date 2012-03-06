@@ -1,28 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.ServiceModel;
-using System.Text;
-using FloatingQueueServer.Core;
+﻿using System.Collections.Generic;
+using FloatingQueue.Server.EventsLogic;
 
-namespace FloatingQueueServer
+namespace FloatingQueue.Server.Service
 {
-    [ServiceContract]
-    public interface IQueueService
-    {
-        [OperationContract]
-        void Push(string aggregateId, int version, object e);
-        [OperationContract]
-        bool TryGetNext(string aggregateId, int version, out object next);
-        [OperationContract]
-        IEnumerable<object> GetAllNext(string aggregateId, int version);
-    }
-
     public class QueueService : IQueueService
     {
         public void Push(string aggregateId, int version, object e)
         {
-            Server.Log.Info("Command: push {0} {1} {2}", aggregateId, version, e);
+            Core.Server.Log.Info("Command: push {0} {1} {2}", aggregateId, version, e);
             var aggregate = GetEventAggregate(aggregateId);
             aggregate.Push(version, e);
         }

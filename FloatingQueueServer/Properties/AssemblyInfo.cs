@@ -4,11 +4,11 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("FloatingQueueServer")]
+[assembly: AssemblyTitle("FloatingQueue.Server")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Eleks")]
-[assembly: AssemblyProduct("FloatingQueueServer")]
+[assembly: AssemblyProduct("FloatingQueue.Server")]
 [assembly: AssemblyCopyright("Copyright © Eleks 2012")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]

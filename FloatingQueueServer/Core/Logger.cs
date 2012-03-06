@@ -2,7 +2,7 @@
 using log4net;
 using log4net.Config;
 
-namespace FloatingQueueServer.Core
+namespace FloatingQueue.Server.Core
 {
     public interface ILogger
     {

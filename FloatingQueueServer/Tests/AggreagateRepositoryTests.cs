@@ -1,7 +1,8 @@
 ﻿using System;
+using FloatingQueue.Server.EventsLogic;
 using NUnit.Framework;
 
-namespace FloatingQueueServer.Tests
+namespace FloatingQueue.Server.Tests
 {
     [TestFixture]
     public class AggreagateRepositoryTests
