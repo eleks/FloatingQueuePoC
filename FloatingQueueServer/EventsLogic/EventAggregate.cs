@@ -9,12 +9,19 @@ namespace FloatingQueue.Server.EventsLogic
         void Push(int version, object e);
         bool TryGetNext(int version, out object next);
         IEnumerable<object> GetAllNext(int version);
+        string AggregateId { get; }
     }
 
     public class EventAggregate : IEventAggregate
     {
         private readonly List<object> m_InternalStorage = new List<object>();
         private readonly object m_SyncRoot = new object();
+        private readonly string m_AggregateId;
+		// consider avoding aggrigate id in this class
+        public EventAggregate(string aggregateId)
+        {
+            m_AggregateId = aggregateId;
+        }
 
         public void Push(int version, object e)
         {
@@ -24,7 +31,11 @@ namespace FloatingQueue.Server.EventsLogic
                 {
                     throw new OptimisticLockException();
                 }
-                m_InternalStorage.Add(e);
+                {   // todo: wrap this into transaction
+                    m_InternalStorage.Add(e);
+                    if (Core.Server.Configuration.IsMaster)
+                        Core.Server.Broadcast(m_AggregateId, version, e);
+                }
             }
         }
 
@@ -51,6 +62,11 @@ namespace FloatingQueue.Server.EventsLogic
             {
                 return m_InternalStorage.Skip(version + 1).ToList();
             }
+        }
+
+        public string AggregateId
+        {
+            get { return m_AggregateId; }
         }
     }
 }

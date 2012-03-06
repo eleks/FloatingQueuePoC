@@ -8,7 +8,7 @@ namespace FloatingQueue.TestClient
     {
         static void Main(string[] args)
         {
-            var proxy = new QueueServiceProxy();
+            var proxy = new AutoQueueProxy();
             bool work = true;
             while (work)
             {

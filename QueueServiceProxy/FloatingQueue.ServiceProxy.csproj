@@ -42,6 +42,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AutoQueueProxy.cs" />
+    <Compile Include="ManualQueueProxy.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="QueueServiceProxy.cs" />
     <Compile Include="Service References\GeneratedClient\Reference.cs">

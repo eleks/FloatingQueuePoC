@@ -24,9 +24,6 @@ namespace FloatingQueue.Server
             }
             Initialize(args);
             RunHost();
-
-
-
         }
 
         private static void Initialize(string[] args)
@@ -36,6 +33,7 @@ namespace FloatingQueue.Server
             var componentsManager = new ComponentsManager();
             var container = componentsManager.GetContainer(configuration);
             Core.Server.Init(container);
+            //Core.Server.ConnectToSiblings();
         }
 
         private static Configuration ParseConfiguration(string[] args)
@@ -85,6 +83,7 @@ namespace FloatingQueue.Server
 
             Core.Server.Log.Info("Press <ENTER> to terminate Host");
             Console.ReadLine();
+            Core.Server.CloseOutcomingConnections();
         }
 
         private static void ShowUsage()
