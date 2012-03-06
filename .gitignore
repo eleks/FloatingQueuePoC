@@ -1,0 +1,9 @@
+
+*.dotCover
+*.user
+*.suo
+_ReSharper.FloatingQueue
+FloatingQueueServer/bin
+FloatingQueueServer/obj
+TestClient/bin
+TestClient/obj

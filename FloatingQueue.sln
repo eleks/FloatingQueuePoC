@@ -1,0 +1,26 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FloatingQueueServer", "FloatingQueueServer\FloatingQueueServer.csproj", "{843EAB20-29A2-4870-8070-72D16AFB2BF4}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestClient", "TestClient\TestClient.csproj", "{EF17F8D8-82A6-4623-9A99-CEBDA0555C44}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x86 = Debug|x86
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{843EAB20-29A2-4870-8070-72D16AFB2BF4}.Debug|x86.ActiveCfg = Debug|x86
+		{843EAB20-29A2-4870-8070-72D16AFB2BF4}.Debug|x86.Build.0 = Debug|x86
+		{843EAB20-29A2-4870-8070-72D16AFB2BF4}.Release|x86.ActiveCfg = Release|x86
+		{843EAB20-29A2-4870-8070-72D16AFB2BF4}.Release|x86.Build.0 = Release|x86
+		{EF17F8D8-82A6-4623-9A99-CEBDA0555C44}.Debug|x86.ActiveCfg = Debug|x86
+		{EF17F8D8-82A6-4623-9A99-CEBDA0555C44}.Debug|x86.Build.0 = Debug|x86
+		{EF17F8D8-82A6-4623-9A99-CEBDA0555C44}.Release|x86.ActiveCfg = Release|x86
+		{EF17F8D8-82A6-4623-9A99-CEBDA0555C44}.Release|x86.Build.0 = Release|x86
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
