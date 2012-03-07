@@ -19,6 +19,7 @@ namespace FloatingQueue.Server.Core
         private void RegisterCoreServices(ContainerBuilder containerBuilder)
         {
             containerBuilder.Register(b => Logger.Instance).As<ILogger>();
+            containerBuilder.RegisterType<ConnectionManager>().As<IConnectionManager>();
         }
     }
 }

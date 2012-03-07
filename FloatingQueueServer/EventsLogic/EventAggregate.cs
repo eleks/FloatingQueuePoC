@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using FloatingQueue.Server.Core;
 using FloatingQueue.Server.Exceptions;
 
 namespace FloatingQueue.Server.EventsLogic
@@ -35,7 +36,7 @@ namespace FloatingQueue.Server.EventsLogic
                 {   // todo: wrap this into transaction, abstract away from here
                     m_InternalStorage.Add(e);
                     if (Core.Server.Configuration.IsMaster)
-                        Core.Server.Broadcast(m_AggregateId, version, e);
+                        Core.Server.Resolve<IConnectionManager>().Broadcast(m_AggregateId, version, e);
                 }
             }
         }

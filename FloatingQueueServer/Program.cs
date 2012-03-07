@@ -87,11 +87,12 @@ namespace FloatingQueue.Server
 
             Core.Server.Log.Info("Press <ENTER> to terminate Host");
             Console.ReadLine();
-            Core.Server.CloseOutcomingConnections();
+            Core.Server.Resolve<IConnectionManager>().CloseOutcomingConnections();
         }
 
         private static void ShowUsage()
         {
+            // todo : use NDesk.Options.WriteOptionDescriptions method here
             Console.WriteLine("Usage: {0} <arg1> .. <argN>", AppDomain.CurrentDomain.FriendlyName);
             Console.WriteLine("Arguments:");
             Console.WriteLine("\tp|port=(int16) - port to run server");

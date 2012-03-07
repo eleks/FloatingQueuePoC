@@ -46,6 +46,5 @@ namespace FloatingQueue.ServiceProxy
         {
             DoClose();
         }
-
     }
 }
