@@ -30,7 +30,8 @@ namespace FloatingQueue.ServiceProxy
             {
                 if (m_Client.State == CommunicationState.Faulted)
                     m_Client.Abort();
-                m_Client.Close();
+                else
+                    m_Client.Close();
                 m_Client = null;
             }
         }

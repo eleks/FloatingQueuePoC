@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.ServiceModel;
 using System.ServiceModel.Channels;
@@ -5,7 +6,7 @@ using FloatingQueue.ServiceProxy.GeneratedClient;
 
 namespace FloatingQueue.ServiceProxy
 {
-    public class ManualQueueProxy : QueueServiceProxy
+    public class ManualQueueProxy : QueueServiceProxy, IEquatable<ManualQueueProxy>
     {
         private readonly Binding m_Binding;
         private readonly EndpointAddress m_EndpointAddress;
@@ -27,7 +28,7 @@ namespace FloatingQueue.ServiceProxy
 
         public override void Push(string aggregateId, int version, object e)
         {
-            Client.Push(aggregateId, version, e);
+                Client.Push(aggregateId, version, e);
         }
 
         public override bool TryGetNext(string aggregateId, int version, out object next)
@@ -48,6 +49,13 @@ namespace FloatingQueue.ServiceProxy
         public void Close()
         {
             DoClose();
+        }
+
+        public string Address { get { return m_EndpointAddress.Uri.AbsoluteUri; } }
+
+        public bool Equals(ManualQueueProxy other)
+        {
+            return this.m_EndpointAddress == other.m_EndpointAddress;
         }
     }
 }
