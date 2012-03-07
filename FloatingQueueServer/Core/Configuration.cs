@@ -6,6 +6,7 @@ namespace FloatingQueue.Server.Core
     {
         int Port { get; }
         bool IsMaster { get; }
+        byte Priority { get; }
         List<INodeInfo> Nodes { get; }
     }
 
@@ -13,6 +14,7 @@ namespace FloatingQueue.Server.Core
     {
         public int Port { get; set; }
         public bool IsMaster { get; set; }
+        public byte Priority { get; set; }
         public List<INodeInfo> Nodes { get; set; }
     }
 
@@ -21,11 +23,13 @@ namespace FloatingQueue.Server.Core
     {
         string Address { get; }
         bool IsMaster { get; }
+        byte Priority { get; }
     }
 
     public class NodeInfo : INodeInfo
     {
         public string Address { get; set; }
         public bool IsMaster { get; set; }
+        public byte Priority { get; set; }
     }
 }

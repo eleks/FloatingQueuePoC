@@ -36,6 +36,7 @@ namespace FloatingQueue.Server
         {
             var configuration = new Configuration { Port = 80 };
             int port;
+            byte priority;
             var p = new OptionSet()
                     {
                         {"p|port=", v => configuration.Port = int.TryParse(v, out port) ? port : 80},
@@ -47,9 +48,11 @@ namespace FloatingQueue.Server
                                               return new NodeInfo
                                               {
                                                   Address = info[0],
-                                                  IsMaster = ( info.Length == 2 ) && ( info[1].ToLower() == "master" )
+                                                  IsMaster = info[1].ToLower() == "master",
+                                                  Priority = (byte.TryParse(info[1], out priority) ? priority : (byte)0)
                                               };
-                                          }).OfType<INodeInfo>().ToList()}
+                                          }).OfType<INodeInfo>().ToList()},
+                        {"pr|priority=",v => configuration.Priority = (byte.TryParse(v, out priority) ? priority : (byte)0)}
                     };
             p.Parse(args);
 
@@ -57,6 +60,7 @@ namespace FloatingQueue.Server
             int mastersCount = configuration.Nodes.Count(n => n.IsMaster) + (configuration.IsMaster ? 1 : 0);
             if (mastersCount != 1)
                 throw new BadConfigurationException("There must be exactly 1 master node");
+            // todo: ensure that every node has it's own unique priority
 
             return configuration;
         }
@@ -79,7 +83,7 @@ namespace FloatingQueue.Server
 
             Core.Server.Log.Info("Press <ENTER> to terminate Host");
             Console.ReadLine();
-            Core.Server.CloseOutcomingConnections();
+            Communicator.Dispose();
         }
 
         private static void ShowUsage()
