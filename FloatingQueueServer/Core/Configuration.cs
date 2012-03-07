@@ -1,53 +1,55 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace FloatingQueue.Server.Core
 {
     public interface IConfiguration
     {
-        int Port { get; }
         bool IsMaster { get; }
-        byte Priority { get; }    //todo: consider replication without slave priorities
-        List<INodeInfo> Nodes { get; }
-        void DeclareServerAsNewMaster();
+        byte ServerId { get; }
+        string Address { get; }
     }
 
-    public class Configuration : IConfiguration
+    public interface IServerConfiguration : IConfiguration
     {
-        public int Port { get; set; }
+        NodeCollection Nodes { get; }
+    }
+
+    public class Configuration : IServerConfiguration
+    {
+        public byte ServerId { get; set; }
+
+        public NodeCollection Nodes { get; set; }
+
+        public string Address
+        {
+            get { return Nodes.Single(n => n.ServerId == this.ServerId).Address; }
+        }
+
+        public bool IsMaster
+        {
+            get { return Nodes.Single(n => n.ServerId == this.ServerId).IsMaster; }
+        }
+    }
+
+    public interface INodeConfiguration : IConfiguration
+    {
+        void DeclareAsDeadMaster();
+        void DeclareAsNewMaster();
+    }
+
+    public class NodeConfiguration : INodeConfiguration
+    {
+        public string Address { get; set; }
         public bool IsMaster { get; set; }
-        public byte Priority { get; set; }
-        public List<INodeInfo> Nodes { get; set; }
-        public void DeclareServerAsNewMaster()
+        public byte ServerId { get; set; }
+        public void DeclareAsNewMaster()
         {
             if (IsMaster)
                 throw new InvalidOperationException("A server who's already a Master cannot declare himself as New Master");
             IsMaster = true;
         }
-    }
-
-    // todo: reuse similar logic, rename priority to server id
-    public interface INodeInfo
-    {
-        string Address { get; }
-        bool IsMaster { get; }
-        byte Priority { get; }
-        void DeclareAsNewMaster();
-        void DeclareAsDeadMaster();
-    }
-
-    public class NodeInfo : INodeInfo
-    {
-        public string Address { get; set; }
-        public bool IsMaster { get; set; }
-        public byte Priority { get; set; }
-        public void DeclareAsNewMaster()
-        {
-            if (IsMaster)
-                throw new InvalidOperationException("A server who's already a Master cannot be declared as New Master");
-            IsMaster = true;
-        }
-
         public void DeclareAsDeadMaster()
         {
             if (!IsMaster)

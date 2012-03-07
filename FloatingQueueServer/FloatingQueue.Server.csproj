@@ -66,6 +66,7 @@
   <ItemGroup>
     <Compile Include="Core\Configuration.cs" />
     <Compile Include="Core\ConnectionManager.cs" />
+    <Compile Include="Core\NodeCollection.cs" />
     <Compile Include="Core\ProxyCollection.cs" />
     <Compile Include="Core\Replication.cs" />
     <Compile Include="EventsLogic\AggregateRepository.cs" />

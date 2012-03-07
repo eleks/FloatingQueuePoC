@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.ServiceModel;
 using System.ServiceModel.Channels;
@@ -34,7 +35,7 @@ namespace FloatingQueue.Server
             Replication.Init();
 
             Core.Server.Log.Info("Nodes:");
-            foreach (var node in configuration.Nodes)
+            foreach (var node in configuration.Nodes.Siblings)
             {
                 Core.Server.Log.Info(node.Address);
             }
@@ -43,42 +44,49 @@ namespace FloatingQueue.Server
 
         private static Configuration ParseConfiguration(string[] args)
         {
-            var configuration = new Configuration { Port = 80, Priority = 0 };
-            int port;
-            byte priority;
+            var configuration = new Configuration { ServerId = 0, Nodes = new NodeCollection() };
+            int port = 80;
+            bool isMaster = false;
+            byte serverId;
+
             var p = new OptionSet()
                     {
-                        {"p|port=", v => configuration.Port = int.TryParse(v, out port) ? port : 80},
-                        {"m|master", v => configuration.IsMaster = !string.IsNullOrEmpty(v) },
-                        {"n|nodes=", v => configuration.Nodes = v.Split(';').Select(
+                        {"p|port=", v => int.TryParse(v, out port)},
+                        {"m|master", v => isMaster = !string.IsNullOrEmpty(v)},
+                        {"pr|priority|id=",v => configuration.ServerId = (byte.TryParse(v, out serverId) ? serverId : (byte)0)},
+                        {"n|nodes=", v => configuration.Nodes.AddRange(v.Split(';').Select(
                                           node => 
                                           { 
                                               var info = node.Split('$');
-                                              return new NodeInfo
+                                              return new NodeConfiguration
                                               {
                                                   Address = info[0],
                                                   IsMaster = info[1].ToLower() == "master",
-                                                  Priority = (byte.TryParse(info[1], out priority) ? priority : (byte)0)
+                                                  ServerId = (byte.TryParse(info[1], out serverId) ? serverId : (byte)0)
                                               };
-                                          }).OfType<INodeInfo>().ToList()},
-                        {"pr|priority=",v => configuration.Priority = (byte.TryParse(v, out priority) ? priority : (byte)0)}
+                                          }).OfType<INodeConfiguration>().ToList())}
                     };
             p.Parse(args);
-
-
+            // liaise nodes collection and current node
+            configuration.Nodes.Add(new NodeConfiguration()
+                                        {
+                                            Address = string.Format("net.tcp://localhost:{0}", port),
+                                            IsMaster = isMaster,
+                                            ServerId = configuration.ServerId
+                                        });
 
             // validate args
-            int mastersCount = configuration.Nodes.Count(n => n.IsMaster) + (configuration.IsMaster ? 1 : 0);
+            int mastersCount = configuration.Nodes.Count(n => n.IsMaster);
             if (mastersCount != 1)
                 throw new BadConfigurationException("There must be exactly 1 master node");
-            // todo: ensure that every node has it's own unique priority
+            // todo: ensure that every node has it's own unique id
 
             return configuration;
         }
 
         private static void RunHost()
         {
-            ServiceHost host = Core.Server.Configuration.IsMaster ? 
+            ServiceHost host = Core.Server.Configuration.IsMaster ?
                 CreateHostWithMex() :
                 CreateHostWithoutMex();
             host.Open();
@@ -98,7 +106,7 @@ namespace FloatingQueue.Server
         private static ServiceHost CreateHostWithoutMex()
         {
             var serviceType = typeof(QueueService);
-            var serviceUri = new Uri(string.Format("net.tcp://localhost:{0}/", Core.Server.Configuration.Port));
+            var serviceUri = new Uri(Core.Server.Configuration.Address);
 
             var host = new ServiceHost(serviceType, serviceUri);
 
@@ -109,7 +117,7 @@ namespace FloatingQueue.Server
         private static ServiceHost CreateHostWithMex()
         {
             var serviceType = typeof(QueueService);
-            var serviceUri = new Uri(string.Format("net.tcp://localhost:{0}/", Core.Server.Configuration.Port));
+            var serviceUri = new Uri(Core.Server.Configuration.Address);
 
             var mexUri = new Uri("http://localhost:11011/");
 

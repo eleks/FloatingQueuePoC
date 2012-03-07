@@ -9,6 +9,7 @@ namespace FloatingQueue.Server.Core
     {
         public static void  Init()
         {
+            //Core.Server.Resolve<IConnectionManager>().OpenOutcomingConnections();
             Core.Server.Resolve<IConnectionManager>().OnConnectionLoss += OnConnectionLoss;
         }
 
@@ -22,25 +23,18 @@ namespace FloatingQueue.Server.Core
 
         private static string MasterAddress
         {
-            get { return Server.Configuration.Nodes.Where(n => n.IsMaster).Single().Address; }
+            get { return Server.Configuration.Nodes.Master.Address; }
         }
 
         private static void ChooseNextJediMaster()
         {
-            //todo: expand this logic in case when slave, who's become a master can also become dead
-            if (Server.Configuration.Priority == 1)
-            {
-                Server.Configuration.DeclareServerAsNewMaster();
-                Server.Log.Info("Declaring server as new Jedi Master");
-            }
-            if (Server.Configuration.Priority > 1)
-            {
-                var oldMaster = Server.Configuration.Nodes.Where(n => n.IsMaster).Single();
-                var newMaster = Server.Configuration.Nodes.Where(n => n.Priority == 1).Single();
-                oldMaster.DeclareAsDeadMaster();
-                newMaster.DeclareAsNewMaster();
-                Server.Log.Info("Declaring server no {0} at {1} as new Jedi Master", newMaster.Priority, newMaster.Address);
-            }
+            var oldMaster = Server.Configuration.Nodes.Master;
+            var newMaster = Server.Configuration.Nodes.First(n => n.ServerId > oldMaster.ServerId); // todo: sort first
+
+            oldMaster.DeclareAsDeadMaster();
+            newMaster.DeclareAsNewMaster();
+
+            Server.Log.Info("Declaring server no {0} at {1} as new Jedi Master", newMaster.ServerId, newMaster.Address);
         }
     }
 }

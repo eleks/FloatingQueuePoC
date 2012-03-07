@@ -5,14 +5,14 @@ namespace FloatingQueue.Server.Core
 {
     public class ComponentsManager
     {
-        public IContainer GetContainer(IConfiguration configuration)
+        public IContainer GetContainer(IServerConfiguration configuration)
         {
             var containerBuilder = new ContainerBuilder();
 
             containerBuilder.Register(b => Logger.Instance).As<ILogger>();
             containerBuilder.RegisterType<ConnectionManager>().As<IConnectionManager>().SingleInstance();
             containerBuilder.RegisterType<EventAggregate>().As<IEventAggregate>().InstancePerDependency();
-            containerBuilder.RegisterInstance(configuration).As<IConfiguration>();
+            containerBuilder.RegisterInstance(configuration).As<IServerConfiguration>();
 
             var container = containerBuilder.Build();
 

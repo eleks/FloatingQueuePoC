@@ -22,9 +22,9 @@ namespace FloatingQueue.Server.Core
             get { return ServicesContainer.Resolve<ILogger>(); }
         }
 
-        public static IConfiguration Configuration
+        public static IServerConfiguration Configuration
         {
-            get { return ServicesContainer.Resolve<IConfiguration>(); }
+            get { return ServicesContainer.Resolve<IServerConfiguration>(); }
         }
 
         public static long TransactionCounter

@@ -38,7 +38,7 @@ namespace FloatingQueue.Server.Core
             {
                 if (!m_IsConnectionOpened)
                 {
-                    foreach (var node in Server.Configuration.Nodes)
+                    foreach (var node in Server.Configuration.Nodes.Siblings)
                     {
                         m_Proxies.OpenProxy(node.Address);
                         Server.Log.Info("Connected to \t{0}", node.Address);
@@ -114,7 +114,7 @@ namespace FloatingQueue.Server.Core
                 while (!stop)
                 {
                     IEnumerable<string> pingAddresses = (Server.Configuration.IsMaster
-                                                             ? Server.Configuration.Nodes
+                                                             ? Server.Configuration.Nodes.Siblings
                                                              : Server.Configuration.Nodes.Where(n => n.IsMaster))
                                                              // slaves ping only master
                                                              .Select(n => n.Address).ToList();

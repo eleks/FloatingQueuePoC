@@ -27,6 +27,7 @@ namespace FloatingQueue.Server.Service
                 }
                 else
                 {
+                    // todo: find a better place to open connections from slaves
                     Core.Server.Resolve<IConnectionManager>().OpenOutcomingConnections();
                 }
                 aggregate.Commit();
