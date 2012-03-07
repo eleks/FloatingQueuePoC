@@ -10,7 +10,7 @@ namespace FloatingQueue.Server.Core
     {
         void ConnectToSiblings();
         void CloseOutcomingConnections();
-        void Broadcast(string aggregateId, int version, object e);
+        bool TryReplicate(string aggregateId, int version, object e);
     }
 
     public class ConnectionManager : IConnectionManager
@@ -42,16 +42,26 @@ namespace FloatingQueue.Server.Core
             m_IsConnectionOpened = false;
         }
 
-        public void Broadcast(string aggregateId, int version, object e)
+        public bool TryReplicate(string aggregateId, int version, object e)
         {
             if (!m_IsConnectionOpened)
             {
                 ConnectToSiblings();
             }
+            int replicas = 0;
             foreach (var proxy in m_Siblings)
             {
-                proxy.Push(aggregateId, version, e);
+                try
+                {
+                    proxy.Push(aggregateId, version, e);
+                    replicas++;
+                }
+                catch(Exception ex)
+                {
+                    Server.Log.Warn("Cannot push.", ex);
+                }
             }
+            return replicas > 0;
         }
     }
 }

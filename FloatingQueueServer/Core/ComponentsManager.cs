@@ -10,7 +10,7 @@ namespace FloatingQueue.Server.Core
             var containerBuilder = new ContainerBuilder();
 
             containerBuilder.Register(b => Logger.Instance).As<ILogger>();
-            containerBuilder.RegisterType<ConnectionManager>().As<IConnectionManager>();
+            containerBuilder.RegisterType<ConnectionManager>().As<IConnectionManager>().SingleInstance();
             containerBuilder.RegisterType<EventAggregate>().As<IEventAggregate>().InstancePerDependency();
             containerBuilder.RegisterInstance(configuration).As<IConfiguration>();
 

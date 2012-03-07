@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using FloatingQueue.Server.Core;
 using FloatingQueue.Server.EventsLogic;
 
@@ -9,10 +10,26 @@ namespace FloatingQueue.Server.Service
         public void Push(string aggregateId, int version, object e)
         {
             Core.Server.Log.Info("Command: push {0} {1} {2}", aggregateId, version, e);
+            // todo: ensure that slaves do not allow writes directly from client
             var aggregate = GetEventAggregate(aggregateId);
-            aggregate.Push(version, e);
-            if (Core.Server.Configuration.IsMaster)
-                Core.Server.Resolve<IConnectionManager>().Broadcast(aggregateId, version, e);
+            try
+            {
+                aggregate.Push(version, e);
+                if (Core.Server.Configuration.IsMaster)
+                {
+                    var replicated = Core.Server.Resolve<IConnectionManager>().TryReplicate(aggregateId, version, e);
+                    if(!replicated)
+                    {
+                        throw new ApplicationException("Cannot replicate the data.");
+                    }
+                }
+                aggregate.Commit();
+            }
+            catch
+            {
+                aggregate.Rollback();
+                throw;
+            }
         }
 
         private static IEventAggregate GetEventAggregate(string aggregateId)
