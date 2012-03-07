@@ -144,7 +144,7 @@ namespace FloatingQueue.Server.Core
             {
                 var proxy = m_Proxies.LiveProxies.ToList().Where(p => address == p.Address);
                 if (proxy.Count() != 1)
-                    return new PingResult() {ResultCode = 2};
+                    return new PingResult() {ResultCode = 3};
                 return proxy.Single().Ping();
             }
 
