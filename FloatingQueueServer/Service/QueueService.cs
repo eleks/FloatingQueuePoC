@@ -25,6 +25,10 @@ namespace FloatingQueue.Server.Service
                         throw new ApplicationException("Cannot replicate the data.");
                     }
                 }
+                else
+                {
+                    Core.Server.Resolve<IConnectionManager>().OpenOutcomingConnections();
+                }
                 aggregate.Commit();
             }
             catch

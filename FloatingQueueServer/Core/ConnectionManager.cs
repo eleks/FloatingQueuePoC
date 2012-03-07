@@ -85,7 +85,7 @@ namespace FloatingQueue.Server.Core
             return replicas > 0;
         }
 
-        public void StartMonitoringConnections()
+        private void StartMonitoringConnections()
         {
             lock (m_MonitoringLock)
             {
@@ -93,7 +93,7 @@ namespace FloatingQueue.Server.Core
             }
             ThreadPool.QueueUserWorkItem(DoMonitoring);
         }
-        public void StopMonitoringConnections()
+        private void StopMonitoringConnections()
         {
             lock (m_MonitoringLock)
             {

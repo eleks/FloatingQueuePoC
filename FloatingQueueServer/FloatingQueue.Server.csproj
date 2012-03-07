@@ -67,6 +67,7 @@
     <Compile Include="Core\Configuration.cs" />
     <Compile Include="Core\ConnectionManager.cs" />
     <Compile Include="Core\ProxyCollection.cs" />
+    <Compile Include="Core\Replication.cs" />
     <Compile Include="EventsLogic\AggregateRepository.cs" />
     <Compile Include="EventsLogic\EventAggregate.cs" />
     <Compile Include="Exceptions\BadConfigurationException.cs" />
@@ -95,9 +96,7 @@
       <Name>FloatingQueue.ServiceProxy</Name>
     </ProjectReference>
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Replication\" />
-  </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
