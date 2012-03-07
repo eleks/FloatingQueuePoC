@@ -25,7 +25,7 @@ namespace FloatingQueue.Server.Tests
 
         protected virtual void RegisterMocks(ContainerBuilder containerBuilder)
         {
-            // todo: add console logger here
+            containerBuilder.RegisterInstance(new TestLogger()).As<ILogger>();
         }
     }
 }

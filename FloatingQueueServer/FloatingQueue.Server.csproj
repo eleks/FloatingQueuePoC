@@ -79,6 +79,7 @@
     <Compile Include="Tests\AggreagateRepositoryTests.cs" />
     <Compile Include="Tests\EventAggregateTests.cs" />
     <Compile Include="Tests\TestBase.cs" />
+    <Compile Include="Tests\TestLogger.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config">
