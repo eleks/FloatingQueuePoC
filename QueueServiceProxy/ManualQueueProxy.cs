@@ -10,9 +10,12 @@ namespace FloatingQueue.ServiceProxy
     {
         private readonly Binding m_Binding;
         private readonly EndpointAddress m_EndpointAddress;
+        private readonly string m_OriginalAddressStr; // EndpointAddress modifies original address
+        private readonly object m_SyncRoot = new object();
 
         public ManualQueueProxy(string address)
         {
+            m_OriginalAddressStr = address;
             m_EndpointAddress = new EndpointAddress(address);
             m_Binding = new NetTcpBinding();
             CreateClient();
@@ -28,35 +31,68 @@ namespace FloatingQueue.ServiceProxy
 
         public override void Push(string aggregateId, int version, object e)
         {
-            Client.Push(aggregateId, version, e);
+            lock (m_SyncRoot)
+            {
+                Client.Push(aggregateId, version, e);
+            }
         }
 
         public override bool TryGetNext(string aggregateId, int version, out object next)
         {
-            return Client.TryGetNext(out next, aggregateId, version);
+            lock (m_SyncRoot)
+            {
+                return Client.TryGetNext(out next, aggregateId, version);
+            }
         }
 
         public override IEnumerable<object> GetAllNext(string aggregateId, int version)
         {
-            return Client.GetAllNext(aggregateId, version);
+            lock (m_SyncRoot)
+            {
+                return Client.GetAllNext(aggregateId, version);
+            }
         }
 
         public PingResult Ping()
         {
-            return Client.Ping();
+            lock (m_SyncRoot)
+            {
+                // todo create enumeration for fault reasons
+                try
+                {
+                    return Client.Ping();
+                }
+                catch (CommunicationException)
+                {
+                    return new PingResult() { ResultCode = 1 };
+                }
+                catch (TimeoutException)
+                {
+                    return new PingResult() { ResultCode = 2 };
+                }
+            }
         }
 
         public void Open()
         {
-            Client.Open();
+            lock (m_SyncRoot)
+            {
+                Client.Open();
+            }
         }
 
         public void Close()
         {
-            DoClose();
+            lock (m_SyncRoot)
+            {
+                DoClose();
+            }
         }
 
-        public string Address { get { return m_EndpointAddress.Uri.AbsoluteUri; } }
+        public string Address
+        {
+            get { return m_OriginalAddressStr; }
+        }
 
         public bool Equals(ManualQueueProxy other)
         {

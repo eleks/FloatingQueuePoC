@@ -58,6 +58,7 @@ namespace FloatingQueue.Server.Service
 
         public PingResult Ping()
         {
+            //todo: add some logic here
             return new PingResult();
         }
 

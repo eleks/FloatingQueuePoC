@@ -22,6 +22,9 @@ namespace FloatingQueue.ServiceProxy.GeneratedClient {
         [System.NonSerializedAttribute()]
         private System.Runtime.Serialization.ExtensionDataObject extensionDataField;
         
+        [System.Runtime.Serialization.OptionalFieldAttribute()]
+        private int ResultCodeField;
+        
         [global::System.ComponentModel.BrowsableAttribute(false)]
         public System.Runtime.Serialization.ExtensionDataObject ExtensionData {
             get {
@@ -29,6 +32,19 @@ namespace FloatingQueue.ServiceProxy.GeneratedClient {
             }
             set {
                 this.extensionDataField = value;
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public int ResultCode {
+            get {
+                return this.ResultCodeField;
+            }
+            set {
+                if ((this.ResultCodeField.Equals(value) != true)) {
+                    this.ResultCodeField = value;
+                    this.RaisePropertyChanged("ResultCode");
+                }
             }
         }
         

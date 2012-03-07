@@ -31,8 +31,7 @@ namespace FloatingQueue.Server
             var componentsManager = new ComponentsManager();
             var container = componentsManager.GetContainer(configuration);
             Core.Server.Init(container);
-            //Core.Server.ConnectToSiblings();
-
+            
             Core.Server.Log.Info("Nodes:");
             foreach (var node in configuration.Nodes)
             {

@@ -20,7 +20,8 @@ namespace FloatingQueue.Server.Service
     [DataContract]
     public class PingResult
     {
-        // todo: place specific instructions here
+        [DataMember]
+        public int ResultCode;
     }
 
 }
