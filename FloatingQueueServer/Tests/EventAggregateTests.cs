@@ -6,7 +6,7 @@ using NUnit.Framework;
 namespace FloatingQueue.Server.Tests
 {
     [TestFixture]
-    public class EventAggregateTests
+    public class EventAggregateTests : TestBase
     {
         [Test]
         public void TryGetNextSuccessfullTest()

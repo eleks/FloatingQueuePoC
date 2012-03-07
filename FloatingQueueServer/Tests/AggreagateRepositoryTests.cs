@@ -1,12 +1,20 @@
 ﻿using System;
+using Autofac;
 using FloatingQueue.Server.EventsLogic;
+using Moq;
 using NUnit.Framework;
 
 namespace FloatingQueue.Server.Tests
 {
     [TestFixture]
-    public class AggreagateRepositoryTests
+    public class AggreagateRepositoryTests : TestBase
     {
+        protected override void RegisterMocks(Autofac.ContainerBuilder containerBuilder)
+        {
+            base.RegisterMocks(containerBuilder);
+            containerBuilder.RegisterInstance(new Mock<IEventAggregate>().Object).As<IEventAggregate>();
+        }
+
         [Test]
         public void CreateAndGetSuccessfullTest()
         {
