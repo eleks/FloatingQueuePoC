@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using FloatingQueue.Server.Core;
 using FloatingQueue.Server.EventsLogic;
 
 namespace FloatingQueue.Server.Service
@@ -10,6 +11,8 @@ namespace FloatingQueue.Server.Service
             Core.Server.Log.Info("Command: push {0} {1} {2}", aggregateId, version, e);
             var aggregate = GetEventAggregate(aggregateId);
             aggregate.Push(version, e);
+            if (Core.Server.Configuration.IsMaster)
+                Core.Server.Resolve<IConnectionManager>().Broadcast(aggregateId, version, e);
         }
 
         private static IEventAggregate GetEventAggregate(string aggregateId)
