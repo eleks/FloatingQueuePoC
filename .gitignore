@@ -14,3 +14,4 @@ obj
 *.xsd
 *.wsdl
 *.svcmap
+*.datasource

@@ -4,6 +4,7 @@ using System.Linq;
 using System.ServiceModel;
 using System.Text;
 using FloatingQueue.ServiceProxy;
+using FloatingQueue.ServiceProxy.GeneratedClient;
 
 namespace FloatingQueue.Server.Core
 {
@@ -16,7 +17,7 @@ namespace FloatingQueue.Server.Core
 
     public class ConnectionManager : IConnectionManager
     {
-        private readonly ProxyCollection m_Proxies = new ProxyCollection(Server.Log);
+        private readonly ProxyCollection m_Proxies = new ProxyCollection();
 
         private bool m_IsConnectionOpened = false;
 
@@ -53,6 +54,7 @@ namespace FloatingQueue.Server.Core
                 catch (CommunicationException)
                 {
                     m_Proxies.MarkAsDead(proxy);
+                    Server.Log.Warn("node {0} is dead", proxy.Address);
                 }
                 catch (Exception ex)
                 {
@@ -62,6 +64,13 @@ namespace FloatingQueue.Server.Core
             m_Proxies.RemoveDeadProxies();
 
             return replicas > 0;
+        }
+
+        private PingResult Ping(string address)
+        {
+            // todo: return failure in ping result instead of throwing
+            var proxy = m_Proxies.LiveProxies.Where(p => address == p.Address).Single();
+            return proxy.Ping();
         }
     }
 }

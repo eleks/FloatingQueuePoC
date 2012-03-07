@@ -10,12 +10,6 @@ namespace FloatingQueue.Server.Core
     {
         private readonly List<ManualQueueProxy> m_Proxies = new List<ManualQueueProxy>();
         private readonly List<bool> m_DeadProxies = new List<bool>();
-        private readonly ILogger m_Logger;
-
-        public ProxyCollection(ILogger logger)
-        {
-            m_Logger = logger;
-        }
 
         public void OpenProxy(string address)
         {
@@ -40,7 +34,6 @@ namespace FloatingQueue.Server.Core
 
         public void MarkAsDead(ManualQueueProxy proxy)
         {
-            m_Logger.Warn("node {0} is dead", proxy.Address);
             proxy.Close();
             var index = m_Proxies.IndexOf(proxy);
             m_DeadProxies[index] = true;

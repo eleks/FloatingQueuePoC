@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Linq;
 using System.ServiceModel;
+using System.ServiceModel.Channels;
+using System.ServiceModel.Description;
 using FloatingQueue.Server.Core;
 using FloatingQueue.Server.Exceptions;
 using FloatingQueue.Server.Service;
@@ -40,7 +42,7 @@ namespace FloatingQueue.Server
 
         private static Configuration ParseConfiguration(string[] args)
         {
-            var configuration = new Configuration { Port = 80, Priority = 0};
+            var configuration = new Configuration { Port = 80, Priority = 0 };
             int port;
             byte priority;
             var p = new OptionSet()
@@ -62,7 +64,7 @@ namespace FloatingQueue.Server
                     };
             p.Parse(args);
 
-            
+
 
             // validate args
             int mastersCount = configuration.Nodes.Count(n => n.IsMaster) + (configuration.IsMaster ? 1 : 0);
@@ -75,11 +77,9 @@ namespace FloatingQueue.Server
 
         private static void RunHost()
         {
-            var serviceType = typeof(QueueService);
-            var serviceUri = new Uri(string.Format("net.tcp://localhost:{0}/", Core.Server.Configuration.Port));
-
-            var host = new ServiceHost(serviceType, serviceUri);
-
+            ServiceHost host = Core.Server.Configuration.IsMaster ? 
+                CreateHostWithMex() :
+                CreateHostWithoutMex();
             host.Open();
 
             Core.Server.Log.Info("I am {0}", Core.Server.Configuration.IsMaster ? "master" : "slave");
@@ -92,6 +92,41 @@ namespace FloatingQueue.Server
             Core.Server.Log.Info("Press <ENTER> to terminate Host");
             Console.ReadLine();
             Core.Server.Resolve<IConnectionManager>().CloseOutcomingConnections();
+        }
+
+        private static ServiceHost CreateHostWithoutMex()
+        {
+            var serviceType = typeof(QueueService);
+            var serviceUri = new Uri(string.Format("net.tcp://localhost:{0}/", Core.Server.Configuration.Port));
+
+            var host = new ServiceHost(serviceType, serviceUri);
+
+            return host;
+        }
+
+        // for updating service reference, can be turned off when finished
+        private static ServiceHost CreateHostWithMex()
+        {
+            var serviceType = typeof(QueueService);
+            var serviceUri = new Uri(string.Format("net.tcp://localhost:{0}/", Core.Server.Configuration.Port));
+
+            var mexUri = new Uri("http://localhost:11011/");
+
+            var host = new ServiceHost(serviceType, serviceUri, mexUri);
+
+            host.AddServiceEndpoint(typeof(IQueueService), new WSHttpBinding(), "");
+            host.AddServiceEndpoint(typeof(IQueueService), new NetTcpBinding(), "");
+
+            var metadataBehavior = new ServiceMetadataBehavior { HttpGetEnabled = true };
+            host.Description.Behaviors.Add(metadataBehavior);
+
+            Binding mexBinding = MetadataExchangeBindings.CreateMexTcpBinding();
+            host.AddServiceEndpoint(
+                typeof(IMetadataExchange),
+                mexBinding,
+                serviceUri + "/mex");
+
+            return host;
         }
 
         private static void ShowUsage()

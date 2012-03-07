@@ -28,7 +28,7 @@ namespace FloatingQueue.ServiceProxy
 
         public override void Push(string aggregateId, int version, object e)
         {
-                Client.Push(aggregateId, version, e);
+            Client.Push(aggregateId, version, e);
         }
 
         public override bool TryGetNext(string aggregateId, int version, out object next)
@@ -41,9 +41,14 @@ namespace FloatingQueue.ServiceProxy
             return Client.GetAllNext(aggregateId, version);
         }
 
+        public PingResult Ping()
+        {
+            return Client.Ping();
+        }
+
         public void Open()
         {
-             Client.Open();
+            Client.Open();
         }
 
         public void Close()

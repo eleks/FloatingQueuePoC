@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Runtime.Serialization;
 using System.ServiceModel;
 
 namespace FloatingQueue.Server.Service
@@ -12,5 +13,14 @@ namespace FloatingQueue.Server.Service
         bool TryGetNext(string aggregateId, int version, out object next);
         [OperationContract]
         IEnumerable<object> GetAllNext(string aggregateId, int version);
+        [OperationContract]
+        PingResult Ping();
     }
+
+    [DataContract]
+    public class PingResult
+    {
+        // todo: place specific instructions here
+    }
+
 }

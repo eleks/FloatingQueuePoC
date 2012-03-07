@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ServiceModel;
+using System.ServiceModel.Channels;
 using FloatingQueue.Server.Core;
 using FloatingQueue.Server.EventsLogic;
 
@@ -18,7 +20,7 @@ namespace FloatingQueue.Server.Service
                 if (Core.Server.Configuration.IsMaster)
                 {
                     var replicated = Core.Server.Resolve<IConnectionManager>().TryReplicate(aggregateId, version, e);
-                    if(!replicated)
+                    if (!replicated)
                     {
                         throw new ApplicationException("Cannot replicate the data.");
                     }
@@ -53,5 +55,13 @@ namespace FloatingQueue.Server.Service
             var aggregate = GetEventAggregate(aggregateId);
             return aggregate.GetAllNext(version);
         }
+
+        public PingResult Ping()
+        {
+            return new PingResult();
+        }
+
     }
+
+
 }

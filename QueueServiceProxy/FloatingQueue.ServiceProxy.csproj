@@ -57,22 +57,9 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
-    <None Include="Service References\GeneratedClient\item.xsd">
-      <SubType>Designer</SubType>
-    </None>
-    <None Include="Service References\GeneratedClient\item1.xsd">
-      <SubType>Designer</SubType>
-    </None>
-    <None Include="Service References\GeneratedClient\item2.xsd">
-      <SubType>Designer</SubType>
-    </None>
-    <None Include="Service References\GeneratedClient\QueueService.wsdl" />
   </ItemGroup>
   <ItemGroup>
     <WCFMetadataStorage Include="Service References\GeneratedClient\" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Service References\GeneratedClient\item.disco" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Service References\GeneratedClient\configuration91.svcinfo" />
@@ -81,10 +68,29 @@
     <None Include="Service References\GeneratedClient\configuration.svcinfo" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="Service References\GeneratedClient\FloatingQueue.ServiceProxy.GeneratedClient.PingResult.datasource">
+      <DependentUpon>Reference.svcmap</DependentUpon>
+    </None>
+    <None Include="Service References\GeneratedClient\item3.xsd">
+      <SubType>Designer</SubType>
+    </None>
+    <None Include="Service References\GeneratedClient\item31.xsd">
+      <SubType>Designer</SubType>
+    </None>
+    <None Include="Service References\GeneratedClient\item32.xsd">
+      <SubType>Designer</SubType>
+    </None>
+    <None Include="Service References\GeneratedClient\item33.xsd">
+      <SubType>Designer</SubType>
+    </None>
+    <None Include="Service References\GeneratedClient\QueueService1.wsdl" />
     <None Include="Service References\GeneratedClient\Reference.svcmap">
       <Generator>WCF Proxy Generator</Generator>
       <LastGenOutput>Reference.cs</LastGenOutput>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Service References\GeneratedClient\item1.disco" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
