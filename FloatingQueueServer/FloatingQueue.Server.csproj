@@ -65,6 +65,7 @@
   <ItemGroup>
     <Compile Include="Core\Configuration.cs" />
     <Compile Include="Core\ConnectionManager.cs" />
+    <Compile Include="Core\ProxyCollection.cs" />
     <Compile Include="EventsLogic\AggregateRepository.cs" />
     <Compile Include="EventsLogic\EventAggregate.cs" />
     <Compile Include="Exceptions\BadConfigurationException.cs" />
