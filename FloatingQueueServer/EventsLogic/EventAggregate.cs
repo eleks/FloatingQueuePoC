@@ -62,6 +62,7 @@ namespace FloatingQueue.Server.EventsLogic
         {
             // todo: flush the data into file system here
             m_HasUncommitedChanges = false;
+            Core.Server.FireTransactionCommited();
         }
 
         public void Rollback()
