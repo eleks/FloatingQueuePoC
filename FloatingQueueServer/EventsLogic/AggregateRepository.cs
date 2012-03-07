@@ -39,7 +39,7 @@ namespace FloatingQueue.Server.EventsLogic
             try
             {
                 m_Lock.EnterWriteLock();
-                var aggregate = new EventAggregate(aggreagateId); // todo : use factory/IoC here
+                var aggregate = Core.Server.Resolve<IEventAggregate>(); // todo : use factory/IoC here
                 m_InternalStorage.Add(aggreagateId, aggregate);
                 return aggregate;
             }

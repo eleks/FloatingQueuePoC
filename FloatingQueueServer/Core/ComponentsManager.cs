@@ -1,4 +1,5 @@
 ﻿using Autofac;
+using FloatingQueue.Server.EventsLogic;
 
 namespace FloatingQueue.Server.Core
 {
@@ -8,17 +9,14 @@ namespace FloatingQueue.Server.Core
         {
             var containerBuilder = new ContainerBuilder();
 
-            RegisterCoreServices(containerBuilder);
+            containerBuilder.Register(b => Logger.Instance).As<ILogger>();
+            containerBuilder.RegisterType<ConnectionManager>().As<IConnectionManager>().SingleInstance();
+            containerBuilder.RegisterType<EventAggregate>().As<IEventAggregate>().InstancePerDependency();
             containerBuilder.RegisterInstance(configuration).As<IConfiguration>();
 
             var container = containerBuilder.Build();
 
             return container;
-        }
-
-        private void RegisterCoreServices(ContainerBuilder containerBuilder)
-        {
-            containerBuilder.Register(b => Logger.Instance).As<ILogger>();
         }
     }
 }

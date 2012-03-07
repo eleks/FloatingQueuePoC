@@ -63,8 +63,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Core\Communicator.cs" />
     <Compile Include="Core\Configuration.cs" />
+    <Compile Include="Core\ConnectionManager.cs" />
     <Compile Include="EventsLogic\AggregateRepository.cs" />
     <Compile Include="EventsLogic\EventAggregate.cs" />
     <Compile Include="Exceptions\BadConfigurationException.cs" />
@@ -78,6 +78,8 @@
     <Compile Include="Service\QueueService.cs" />
     <Compile Include="Tests\AggreagateRepositoryTests.cs" />
     <Compile Include="Tests\EventAggregateTests.cs" />
+    <Compile Include="Tests\TestBase.cs" />
+    <Compile Include="Tests\TestLogger.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config">

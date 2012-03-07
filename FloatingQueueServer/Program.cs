@@ -30,11 +30,17 @@ namespace FloatingQueue.Server
             var container = componentsManager.GetContainer(configuration);
             Core.Server.Init(container);
             //Core.Server.ConnectToSiblings();
+
+            Core.Server.Log.Info("Nodes:");
+            foreach (var node in configuration.Nodes)
+            {
+                Core.Server.Log.Info(node.Address);
+            }
         }
 
         private static Configuration ParseConfiguration(string[] args)
         {
-            var configuration = new Configuration { Port = 80 };
+            var configuration = new Configuration { Port = 80, Priority = 0};
             int port;
             byte priority;
             var p = new OptionSet()
@@ -55,6 +61,8 @@ namespace FloatingQueue.Server
                         {"pr|priority=",v => configuration.Priority = (byte.TryParse(v, out priority) ? priority : (byte)0)}
                     };
             p.Parse(args);
+
+            
 
             // validate args
             int mastersCount = configuration.Nodes.Count(n => n.IsMaster) + (configuration.IsMaster ? 1 : 0);
@@ -83,11 +91,12 @@ namespace FloatingQueue.Server
 
             Core.Server.Log.Info("Press <ENTER> to terminate Host");
             Console.ReadLine();
-            Communicator.Dispose();
+            Core.Server.Resolve<IConnectionManager>().CloseOutcomingConnections();
         }
 
         private static void ShowUsage()
         {
+            // todo : use NDesk.Options.WriteOptionDescriptions method here
             Console.WriteLine("Usage: {0} <arg1> .. <argN>", AppDomain.CurrentDomain.FriendlyName);
             Console.WriteLine("Arguments:");
             Console.WriteLine("\tp|port=(int16) - port to run server");

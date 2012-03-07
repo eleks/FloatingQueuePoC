@@ -6,7 +6,7 @@ namespace FloatingQueue.Server.Core
     {
         int Port { get; }
         bool IsMaster { get; }
-        byte Priority { get; }
+        byte Priority { get; }    //todo: consider replication without slave priorities
         List<INodeInfo> Nodes { get; }
     }
 

@@ -6,12 +6,12 @@ using NUnit.Framework;
 namespace FloatingQueue.Server.Tests
 {
     [TestFixture]
-    public class EventAggregateTests
+    public class EventAggregateTests : TestBase
     {
         [Test]
         public void TryGetNextSuccessfullTest()
         {
-            var aggregate = new EventAggregate("0");
+            var aggregate = new EventAggregate();
             aggregate.Push(0, "test");
 
             object result;
@@ -22,7 +22,7 @@ namespace FloatingQueue.Server.Tests
         [Test]
         public void TryGetNextUnsuccessfullTest()
         {
-            var aggregate = new EventAggregate("0");
+            var aggregate = new EventAggregate();
 
             object result;
             Assert.IsFalse (aggregate.TryGetNext(0, out result));
@@ -31,7 +31,7 @@ namespace FloatingQueue.Server.Tests
         [Test, ExpectedException(typeof(OptimisticLockException))]
         public void OptimisticLockTest()
         {
-            var aggregate = new EventAggregate("0");
+            var aggregate = new EventAggregate();
             aggregate.Push(0, "test1");
             aggregate.Push(0, "test2");
         }
@@ -44,7 +44,7 @@ namespace FloatingQueue.Server.Tests
         [TestCase(10, 9)]
         public void GetAllNextSuccessfullTest(int count, int startingFrom)
         {
-            var aggregate = new EventAggregate("0");
+            var aggregate = new EventAggregate();
 
             for (int i = 0; i < count; i++)
             {

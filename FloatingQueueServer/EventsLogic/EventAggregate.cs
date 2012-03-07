@@ -10,20 +10,15 @@ namespace FloatingQueue.Server.EventsLogic
         void Push(int version, object e);
         bool TryGetNext(int version, out object next);
         IEnumerable<object> GetAllNext(int version);
-        string AggregateId { get; }
+        void Commit();
+        void Rollback();
     }
 
     public class EventAggregate : IEventAggregate
     {
         private readonly List<object> m_InternalStorage = new List<object>();
         private readonly object m_SyncRoot = new object();
-        private readonly string m_AggregateId;
-
-        // consider avoding aggregate id in this class
-        public EventAggregate(string aggregateId)
-        {
-            m_AggregateId = aggregateId;
-        }
+        private bool m_HasUncommitedChanges;
 
         public void Push(int version, object e)
         {
@@ -33,12 +28,8 @@ namespace FloatingQueue.Server.EventsLogic
                 {
                     throw new OptimisticLockException();
                 }
-                {   
-                    // todo: wrap this into transaction, abstract away from here
-                    m_InternalStorage.Add(e);
-                    if (Core.Server.Configuration.IsMaster)
-                        Communicator.Broadcast(m_AggregateId, version, e);
-                }
+                m_InternalStorage.Add(e);
+                m_HasUncommitedChanges = true;
             }
         }
 
@@ -67,9 +58,16 @@ namespace FloatingQueue.Server.EventsLogic
             }
         }
 
-        public string AggregateId
+        public void Commit()
         {
-            get { return m_AggregateId; }
+            // todo: flush the data into file system here
+            m_HasUncommitedChanges = false;
+        }
+
+        public void Rollback()
+        {
+            m_InternalStorage.RemoveAt(m_InternalStorage.Count - 1);
+            m_HasUncommitedChanges = false;
         }
     }
 }

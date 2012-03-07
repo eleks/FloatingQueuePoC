@@ -15,8 +15,9 @@ namespace FloatingQueue.ServiceProxy
             m_EndpointAddress = new EndpointAddress(address);
             m_Binding = new NetTcpBinding();
             CreateClient();
-            var a = Client as ICommunicationObject;
-            a.Faulted += (sender, args) => { var b = 5; };
+            //todo: think about using WCF's tools to detect failures
+            //var a = Client as ICommunicationObject;
+            //a.Faulted += (sender, args) => { var b = 5; };
         }
 
         protected override QueueServiceClient CreateClientCore()
@@ -48,6 +49,5 @@ namespace FloatingQueue.ServiceProxy
         {
             DoClose();
         }
-
     }
 }
