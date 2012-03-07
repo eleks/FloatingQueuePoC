@@ -32,7 +32,7 @@ namespace FloatingQueue.Server.Core
             get { return ms_TransactionCounter; }
         }
 
-        public static void FireTransactionCompleted()
+        public static void FireTransactionCommited()
         {
             Interlocked.Increment(ref ms_TransactionCounter);
         }
