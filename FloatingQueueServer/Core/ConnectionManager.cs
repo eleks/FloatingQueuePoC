@@ -25,6 +25,7 @@ namespace FloatingQueue.Server.Core
         private readonly object m_MonitoringLock = new object();
         private bool m_IsConnectionOpened = false;
         private bool m_MonitoringEnabled;
+        private readonly object m_InitializationLock = new object();
 
         public const int MonitorWaitTime = 5000;
 
@@ -33,13 +34,19 @@ namespace FloatingQueue.Server.Core
         // note MM: currently slaves don't open outer connections
         public void OpenOutcomingConnections()
         {
-            foreach (var node in Server.Configuration.Nodes)
+            lock (m_InitializationLock)
             {
-                m_Proxies.OpenProxy(node.Address);
-                Server.Log.Info("Connected to \t{0}", node.Address);
+                if (!m_IsConnectionOpened)
+                {
+                    foreach (var node in Server.Configuration.Nodes)
+                    {
+                        m_Proxies.OpenProxy(node.Address);
+                        Server.Log.Info("Connected to \t{0}", node.Address);
+                    }
+                    StartMonitoringConnections();
+                    m_IsConnectionOpened = true;
+                }
             }
-            StartMonitoringConnections();
-            m_IsConnectionOpened = true;
         }
 
         public void CloseOutcomingConnections()
