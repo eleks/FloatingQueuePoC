@@ -1,11 +1,15 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using FloatingQueue.ServiceProxy;
 
 namespace FloatingQueue.TestClient
 {
     class Program
     {
+        private static readonly Random ms_Rand = new Random();
+
         static void Main(string[] args)
         {
             var proxy = new AutoQueueProxy();
@@ -13,6 +17,7 @@ namespace FloatingQueue.TestClient
             while (work)
             {
                 var str = Console.ReadLine();
+                var start = DateTime.Now;
                 var atoms = str.Split(new[] { ' ' }, 4, StringSplitOptions.RemoveEmptyEntries);
                 if (atoms.Length > 0)
                 {
@@ -21,6 +26,22 @@ namespace FloatingQueue.TestClient
                     {
                         case "push":
                             DoPush(proxy, atoms.Skip(1).ToArray());
+                            Console.WriteLine("Done. Completed in {0} ms", (DateTime.Now - start).TotalMilliseconds);
+                            break;
+                        case "flood":
+                            int threads = int.Parse(atoms[1]);
+                            int requests = int.Parse(atoms[2]);
+                            var tasks = new List<Task>();
+                            for (int i = 0; i < threads; i++)
+                            {
+                                tasks.Add(new Task(() => DoFlood(requests)));
+                            }
+                            foreach (var task in tasks)
+                            {
+                                task.Start();
+                            }
+                            Task.WaitAll(tasks.ToArray());
+                            Console.WriteLine("Done. Completed in {0} ms", (DateTime.Now - start).TotalMilliseconds);
                             break;
                         case "exit":
                             work = false;
@@ -31,6 +52,15 @@ namespace FloatingQueue.TestClient
                             break;
                     }
                 }
+            }
+        }
+
+        private static void DoFlood(int requests)
+        {
+            var proxy = new AutoQueueProxy();
+            for (int i = 0; i < requests; i++)
+            {
+                proxy.Push(ms_Rand.Next().ToString(), -1, ms_Rand.Next().ToString());
             }
         }
 
@@ -52,6 +82,7 @@ namespace FloatingQueue.TestClient
             Console.WriteLine("Usage: <command> <arg1> .. <argN>");
             Console.WriteLine("Commands:");
             Console.WriteLine("\tpush <aggregateId> <version> <data>");
+            Console.WriteLine("\tflood <threads> <requests>");
             Console.WriteLine("\texit");
         }
     }
