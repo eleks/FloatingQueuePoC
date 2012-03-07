@@ -30,6 +30,12 @@ namespace FloatingQueue.Server
             var container = componentsManager.GetContainer(configuration);
             Core.Server.Init(container);
             //Core.Server.ConnectToSiblings();
+
+            Core.Server.Log.Info("Nodes:");
+            foreach (var node in configuration.Nodes)
+            {
+                Core.Server.Log.Info(node.Address);
+            }
         }
 
         private static Configuration ParseConfiguration(string[] args)
@@ -52,6 +58,8 @@ namespace FloatingQueue.Server
                                           }).OfType<INodeInfo>().ToList()}
                     };
             p.Parse(args);
+
+            
 
             // validate args
             int mastersCount = configuration.Nodes.Count(n => n.IsMaster) + (configuration.IsMaster ? 1 : 0);
