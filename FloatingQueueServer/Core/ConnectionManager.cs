@@ -9,6 +9,7 @@ using FloatingQueue.ServiceProxy.GeneratedClient;
 
 namespace FloatingQueue.Server.Core
 {
+    // todo: identify lost server by ServerId, not by Address
     public delegate void ConnectionLostHandler(string lostConnectionAddress);
 
     public interface IConnectionManager
@@ -21,13 +22,14 @@ namespace FloatingQueue.Server.Core
 
     public class ConnectionManager : IConnectionManager
     {
+        // todo: consider mixing ProxyCollection and NodeCollection, as they represent similar information
         private readonly ProxyCollection m_Proxies = new ProxyCollection();
         private readonly object m_MonitoringLock = new object();
         private bool m_IsConnectionOpened = false;
         private bool m_MonitoringEnabled;
         private readonly object m_InitializationLock = new object();
 
-        public const int MonitorWaitTime = 5000;
+        public const int MonitorWaitTime = 10000;
 
         public event ConnectionLostHandler OnConnectionLoss;
 
@@ -38,12 +40,14 @@ namespace FloatingQueue.Server.Core
             {
                 if (!m_IsConnectionOpened)
                 {
+                    // note MM: logic changed - slaves ping other slaves also (previously they pinged only master)
                     foreach (var node in Server.Configuration.Nodes.Siblings)
                     {
                         m_Proxies.OpenProxy(node.Address);
                         Server.Log.Info("Connected to \t{0}", node.Address);
                     }
                     StartMonitoringConnections();
+                    OnConnectionLoss += m_Proxies.MarkAsDead;
                     m_IsConnectionOpened = true;
                 }
             }
@@ -53,6 +57,7 @@ namespace FloatingQueue.Server.Core
         {
             m_Proxies.CloseAllProxies();
             StopMonitoringConnections();
+            OnConnectionLoss -= m_Proxies.MarkAsDead;
             m_IsConnectionOpened = false;
         }
 
@@ -72,8 +77,8 @@ namespace FloatingQueue.Server.Core
                 }
                 catch (CommunicationException)
                 {
-                    m_Proxies.MarkAsDead(proxy);
-                    Server.Log.Warn("node {0} is dead", proxy.Address);
+                    FireConnectionLoss(proxy.Address);
+                    Server.Log.Warn("Replication at {0} failed. Node is dead", proxy.Address);
                 }
                 catch (Exception ex)
                 {
@@ -113,23 +118,22 @@ namespace FloatingQueue.Server.Core
                 bool stop = false;
                 while (!stop)
                 {
-                    IEnumerable<string> pingAddresses = (Server.Configuration.IsMaster
-                                                             ? Server.Configuration.Nodes.Siblings
-                                                             : Server.Configuration.Nodes.Where(n => n.IsMaster))
-                                                             // slaves ping only master
-                                                             .Select(n => n.Address).ToList();
+                    IEnumerable<string> pingAddresses = 
+                        (Server.Configuration.IsMaster
+                       ? Server.Configuration.Nodes.Siblings
+                       : Server.Configuration.Nodes.Where(n => n.IsMaster)) // slaves ping only master
+                       .Select(n => n.Address).ToList();
 
-                    Server.Log.Info("Pinging other servers");
-                    foreach (var address in pingAddresses)
+                    Server.Log.Debug("Pinging other servers");
+                    foreach (var proxy in m_Proxies.LiveProxies)
                     {
-                        var result = PingNode(address);
+                        var result = proxy.Ping();
 
-                        Server.Log.Info("\t{0} - code {1}", address, result.ResultCode);
+                        Server.Log.Debug("\t{0} - code {1}", proxy.Address, result.ResultCode);
 
                         if (result.ResultCode != 0)
                         {
-                            if (OnConnectionLoss != null)
-                                OnConnectionLoss(address);
+                            FireConnectionLoss(proxy.Address);
                         }
                     }
                     Thread.Sleep(MonitorWaitTime);
@@ -145,16 +149,11 @@ namespace FloatingQueue.Server.Core
             }
         }
 
-        private PingResult PingNode(string address)
+        private void FireConnectionLoss(string address)
         {
-            lock (m_MonitoringLock)
-            {
-                var proxy = m_Proxies.LiveProxies.ToList().Where(p => address == p.Address);
-                if (proxy.Count() != 1)
-                    return new PingResult() {ResultCode = 3};
-                return proxy.Single().Ping();
-            }
-
+            if (OnConnectionLoss != null)
+                OnConnectionLoss(address);
         }
+
     }
 }

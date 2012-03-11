@@ -19,6 +19,12 @@ namespace FloatingQueue.Server.Core
             {
                 ChooseNextJediMaster();
             }
+            CleanupBrokenServer(lostConnectionAddress);
+        }
+
+        private static void CleanupBrokenServer(string lostConnectionAddress)
+        {
+            Server.Configuration.Nodes.RemoveAll(n => n.Address == lostConnectionAddress);
         }
 
         private static string MasterAddress
@@ -28,13 +34,18 @@ namespace FloatingQueue.Server.Core
 
         private static void ChooseNextJediMaster()
         {
+            Server.Configuration.Nodes.Sort((a,b) => a.ServerId - b.ServerId);
+
             var oldMaster = Server.Configuration.Nodes.Master;
-            var newMaster = Server.Configuration.Nodes.First(n => n.ServerId > oldMaster.ServerId); // todo: sort first
+            var newMaster = Server.Configuration.Nodes.First(n => n.ServerId > oldMaster.ServerId);
 
             oldMaster.DeclareAsDeadMaster();
             newMaster.DeclareAsNewMaster();
 
-            Server.Log.Info("Declaring server no {0} at {1} as new Jedi Master", newMaster.ServerId, newMaster.Address);
+            Server.Log.Warn("Declaring {0} as new Jedi Master",
+                Server.Configuration.IsMaster
+                ? "Myself"
+                : string.Format("server no {0} at {1}", newMaster.ServerId, newMaster.Address));
         }
     }
 }

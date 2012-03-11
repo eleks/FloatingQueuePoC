@@ -42,9 +42,9 @@ namespace FloatingQueue.Server
 
         }
 
-        private static Configuration ParseConfiguration(string[] args)
+        private static ServerConfiguration ParseConfiguration(string[] args)
         {
-            var configuration = new Configuration { ServerId = 0, Nodes = new NodeCollection() };
+            var configuration = new ServerConfiguration { ServerId = 0, Nodes = new NodeCollection() };
             int port = 80;
             bool isMaster = false;
             byte serverId;

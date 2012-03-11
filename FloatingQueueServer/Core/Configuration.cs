@@ -16,26 +16,23 @@ namespace FloatingQueue.Server.Core
         NodeCollection Nodes { get; }
     }
 
-    public class Configuration : IServerConfiguration
+    public class ServerConfiguration : IServerConfiguration
     {
-        public byte ServerId { get; set; }
-
-        public NodeCollection Nodes { get; set; }
-
-        public string Address
-        {
-            get { return Nodes.Single(n => n.ServerId == this.ServerId).Address; }
-        }
-
         public bool IsMaster
         {
-            get { return Nodes.Single(n => n.ServerId == this.ServerId).IsMaster; }
+            get { return Nodes.Self.IsMaster; }
         }
+        public byte ServerId { get; set; }
+        public string Address
+        {
+            get { return Nodes.Self.Address; }
+        }
+        public NodeCollection Nodes { get; set; }
     }
 
     public interface INodeConfiguration : IConfiguration
     {
-        void DeclareAsDeadMaster();
+        void DeclareAsDeadMaster(); // todo: consider if this method is really needed - Node is simply deleted from collection
         void DeclareAsNewMaster();
     }
 

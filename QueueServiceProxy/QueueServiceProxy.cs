@@ -28,11 +28,24 @@ namespace FloatingQueue.ServiceProxy
         {
             if (m_Client != null)
             {
-                if (m_Client.State == CommunicationState.Faulted)
+                bool abort = false;
+                try
+                {
+                    if (m_Client.State == CommunicationState.Faulted)
+                        abort = true;
+                    else
+                        m_Client.Close();
+                }
+                catch (CommunicationException)
+                {
+                    abort = true;
+                }
+                catch(TimeoutException)
+                {
+                    abort = true;
+                }
+                if (abort)
                     m_Client.Abort();
-                else
-                    m_Client.Close();
-                m_Client = null;
             }
         }
 

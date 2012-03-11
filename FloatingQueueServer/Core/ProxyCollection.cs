@@ -27,6 +27,8 @@ namespace FloatingQueue.Server.Core
         {
             lock (m_SyncRoot)
             {
+                // note MM: if server is closed in small interval after another server has died and before it's been noticed(by ping or by method call), then wcf would fire exceptions. But at the moment they are handled by Proxy class. this may be subject to fix.
+                RemoveDeadProxies();
                 foreach (var proxy in m_Proxies)
                 {
                     proxy.Close();
@@ -45,12 +47,13 @@ namespace FloatingQueue.Server.Core
             }
         }
 
-        public void MarkAsDead(ManualQueueProxy proxy)
+        public void MarkAsDead(string proxyAddress)
         {
             lock (m_SyncRoot)
             {
-                proxy.Close();
+                var proxy = m_Proxies.Single(p => p.Address == proxyAddress);
                 var index = m_Proxies.IndexOf(proxy);
+                proxy.Close();
                 m_DeadProxies[index] = true;
             }
         }

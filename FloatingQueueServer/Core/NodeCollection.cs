@@ -7,10 +7,21 @@ namespace FloatingQueue.Server.Core
 {
     public class NodeCollection : List<INodeConfiguration>
     {
-        public List<INodeConfiguration> Siblings { get
+        public List<INodeConfiguration> Siblings
         {
-            return this.Where(n => !n.IsMaster).ToList();
-        }} 
+            get
+            {
+                return this.Where(n => n.ServerId != Server.Configuration.ServerId).ToList();
+            }
+        }
+
+        public INodeConfiguration Self
+        {
+            get
+            {
+                return this.Single(n => n.ServerId == Server.Configuration.ServerId);
+            }
+        } 
 
         public INodeConfiguration Master
         {
