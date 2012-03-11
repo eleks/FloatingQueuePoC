@@ -46,6 +46,7 @@ namespace FloatingQueue.ServiceProxy
                 }
                 if (abort)
                     m_Client.Abort();
+                m_Client = null;
             }
         }
 

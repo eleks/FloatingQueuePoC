@@ -17,7 +17,7 @@ namespace FloatingQueue.Server.Core
         void OpenOutcomingConnections();
         void CloseOutcomingConnections();
         bool TryReplicate(string aggregateId, int version, object e);
-        event ConnectionLostHandler OnConnectionLoss; // fires in another thread
+        event ConnectionLostHandler OnConnectionLoss; // todo MM: consider taking some actions when all connections are lost
     }
 
     public class ConnectionManager : IConnectionManager
