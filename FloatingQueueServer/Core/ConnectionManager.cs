@@ -33,14 +33,12 @@ namespace FloatingQueue.Server.Core
 
         public event ConnectionLostHandler OnConnectionLoss;
 
-        // note MM: currently slaves don't open outer connections
         public void OpenOutcomingConnections()
         {
             lock (m_InitializationLock)
             {
                 if (!m_IsConnectionOpened)
                 {
-                    // note MM: logic changed - slaves ping other slaves also (previously they pinged only master)
                     foreach (var node in Server.Configuration.Nodes.Siblings)
                     {
                         m_Proxies.OpenProxy(node.Address);
@@ -118,12 +116,6 @@ namespace FloatingQueue.Server.Core
                 bool stop = false;
                 while (!stop)
                 {
-                    IEnumerable<string> pingAddresses = 
-                        (Server.Configuration.IsMaster
-                       ? Server.Configuration.Nodes.Siblings
-                       : Server.Configuration.Nodes.Where(n => n.IsMaster)) // slaves ping only master
-                       .Select(n => n.Address).ToList();
-
                     Server.Log.Debug("Pinging other servers");
                     foreach (var proxy in m_Proxies.LiveProxies)
                     {
