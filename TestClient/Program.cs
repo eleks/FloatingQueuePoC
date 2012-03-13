@@ -2,17 +2,19 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using FloatingQueue.ServiceProxy;
+using FloatingQueue.Common.Proxy;
 
 namespace FloatingQueue.TestClient
 {
     class Program
     {
         private static readonly Random ms_Rand = new Random();
+        private const string MasterAddress = "net.tcp://localhost:11081";
+
 
         static void Main(string[] args)
         {
-            var proxy = new AutoQueueProxy();
+            var proxy = new AutoQueueProxy(MasterAddress);
             bool work = true;
             while (work)
             {
@@ -57,7 +59,7 @@ namespace FloatingQueue.TestClient
 
         private static void DoFlood(int requests)
         {
-            var proxy = new AutoQueueProxy();
+            var proxy = new AutoQueueProxy(MasterAddress);
             for (int i = 0; i < requests; i++)
             {
                 proxy.Push(ms_Rand.Next().ToString(), -1, ms_Rand.Next().ToString());

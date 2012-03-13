@@ -4,13 +4,11 @@ using System.Linq;
 using System.ServiceModel;
 using System.Text;
 using System.Threading;
-using FloatingQueue.ServiceProxy;
-using FloatingQueue.ServiceProxy.GeneratedClient;
 
 namespace FloatingQueue.Server.Core
 {
     // todo: identify lost server by ServerId, not by Address
-    public delegate void ConnectionLostHandler(string lostConnectionAddress);
+    public delegate void ConnectionLostHandler(int lostServerId);
 
     public interface IConnectionManager
     {
@@ -22,8 +20,6 @@ namespace FloatingQueue.Server.Core
 
     public class ConnectionManager : IConnectionManager
     {
-        // todo: consider mixing ProxyCollection and NodeCollection, as they represent similar information
-        private readonly ProxyCollection m_Proxies = new ProxyCollection();
         private readonly object m_MonitoringLock = new object();
         private bool m_IsConnectionOpened = false;
         private bool m_MonitoringEnabled;
@@ -33,31 +29,31 @@ namespace FloatingQueue.Server.Core
 
         public event ConnectionLostHandler OnConnectionLoss;
 
-        // note MM: currently slaves don't open outer connections
         public void OpenOutcomingConnections()
         {
             lock (m_InitializationLock)
             {
                 if (!m_IsConnectionOpened)
                 {
-                    // note MM: logic changed - slaves ping other slaves also (previously they pinged only master)
                     foreach (var node in Server.Configuration.Nodes.Siblings)
                     {
-                        m_Proxies.OpenProxy(node.Address);
+                        node.Proxy.Open();
                         Server.Log.Info("Connected to \t{0}", node.Address);
                     }
                     StartMonitoringConnections();
-                    OnConnectionLoss += m_Proxies.MarkAsDead;
+                    OnConnectionLoss += Server.Configuration.Nodes.RemoveDeadNode;
                     m_IsConnectionOpened = true;
                 }
             }
         }
-
         public void CloseOutcomingConnections()
         {
-            m_Proxies.CloseAllProxies();
+            foreach (var node in Server.Configuration.Nodes.Siblings)
+            {
+                node.Proxy.Close();
+            }
             StopMonitoringConnections();
-            OnConnectionLoss -= m_Proxies.MarkAsDead;
+            OnConnectionLoss -= Server.Configuration.Nodes.RemoveDeadNode;
             m_IsConnectionOpened = false;
         }
 
@@ -68,24 +64,25 @@ namespace FloatingQueue.Server.Core
                 OpenOutcomingConnections();
             }
             int replicas = 0;
-            foreach (var proxy in m_Proxies.LiveProxies)
+            foreach (var node in Server.Configuration.Nodes.Siblings)
             {
                 try
                 {
-                    proxy.Push(aggregateId, version, e);
+                    node.Proxy.Push(aggregateId, version, e);
                     replicas++;
                 }
                 catch (CommunicationException)
                 {
-                    FireConnectionLoss(proxy.Address);
-                    Server.Log.Warn("Replication at {0} failed. Node is dead", proxy.Address);
+                    FireConnectionLoss(node.ServerId);
+                    Server.Log.Warn("Replication at {0} failed. Node is dead", node.Address);
                 }
                 catch (Exception ex)
                 {
                     Server.Log.Warn("Cannot push.", ex);
                 }
             }
-            m_Proxies.RemoveDeadProxies();
+
+            // todo MM: Server.Configuration.Nodes.RemoveDeadProxies();
 
             return replicas > 0;
         }
@@ -118,22 +115,16 @@ namespace FloatingQueue.Server.Core
                 bool stop = false;
                 while (!stop)
                 {
-                    IEnumerable<string> pingAddresses = 
-                        (Server.Configuration.IsMaster
-                       ? Server.Configuration.Nodes.Siblings
-                       : Server.Configuration.Nodes.Where(n => n.IsMaster)) // slaves ping only master
-                       .Select(n => n.Address).ToList();
-
                     Server.Log.Debug("Pinging other servers");
-                    foreach (var proxy in m_Proxies.LiveProxies)
+                    foreach (var node in Server.Configuration.Nodes.Siblings)
                     {
-                        var result = proxy.Ping();
+                        var result = node.Proxy.Ping();
 
-                        Server.Log.Debug("\t{0} - code {1}", proxy.Address, result.ResultCode);
+                        Server.Log.Debug("\t{0} - code {1}", node.Address, result.ResultCode);
 
                         if (result.ResultCode != 0)
                         {
-                            FireConnectionLoss(proxy.Address);
+                            FireConnectionLoss(node.ServerId);
                         }
                     }
                     Thread.Sleep(MonitorWaitTime);
@@ -149,10 +140,10 @@ namespace FloatingQueue.Server.Core
             }
         }
 
-        private void FireConnectionLoss(string address)
+        private void FireConnectionLoss(int serverId)
         {
             if (OnConnectionLoss != null)
-                OnConnectionLoss(address);
+                OnConnectionLoss(serverId);
         }
 
     }

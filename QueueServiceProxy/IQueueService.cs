@@ -2,7 +2,7 @@
 using System.Runtime.Serialization;
 using System.ServiceModel;
 
-namespace FloatingQueue.Server.Service
+namespace FloatingQueue.Common
 {
     [ServiceContract]
     public interface IQueueService

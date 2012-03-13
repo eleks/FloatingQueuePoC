@@ -67,7 +67,6 @@
     <Compile Include="Core\Configuration.cs" />
     <Compile Include="Core\ConnectionManager.cs" />
     <Compile Include="Core\NodeCollection.cs" />
-    <Compile Include="Core\ProxyCollection.cs" />
     <Compile Include="Core\Replication.cs" />
     <Compile Include="EventsLogic\AggregateRepository.cs" />
     <Compile Include="EventsLogic\EventAggregate.cs" />
@@ -78,7 +77,6 @@
     <Compile Include="Exceptions\OptimisticLockException.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Service\IQueueService.cs" />
     <Compile Include="Service\QueueService.cs" />
     <Compile Include="Tests\AggreagateRepositoryTests.cs" />
     <Compile Include="Tests\EventAggregateTests.cs" />
@@ -92,9 +90,9 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\QueueServiceProxy\FloatingQueue.ServiceProxy.csproj">
+    <ProjectReference Include="..\QueueServiceProxy\FloatingQueue.Common.csproj">
       <Project>{B9221127-6168-44CE-8B31-0962CBB5CD40}</Project>
-      <Name>FloatingQueue.ServiceProxy</Name>
+      <Name>FloatingQueue.Common</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup />

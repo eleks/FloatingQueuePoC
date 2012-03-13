@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using FloatingQueue.Common.Proxy;
+using FloatingQueue.Server.Service;
 
 namespace FloatingQueue.Server.Core
 {
@@ -9,11 +11,17 @@ namespace FloatingQueue.Server.Core
         bool IsMaster { get; }
         byte ServerId { get; }
         string Address { get; }
+        IQueueServiceProxy Proxy { get; }
+    }
+
+    public interface INodeConfiguration : IConfiguration
+    {
+        void DeclareAsNewMaster();
     }
 
     public interface IServerConfiguration : IConfiguration
     {
-        NodeCollection Nodes { get; }
+        INodeCollection Nodes { get; }
     }
 
     public class ServerConfiguration : IServerConfiguration
@@ -27,18 +35,14 @@ namespace FloatingQueue.Server.Core
         {
             get { return Nodes.Self.Address; }
         }
-        public NodeCollection Nodes { get; set; }
-    }
-
-    public interface INodeConfiguration : IConfiguration
-    {
-        void DeclareAsDeadMaster(); // todo: consider if this method is really needed - Node is simply deleted from collection
-        void DeclareAsNewMaster();
+        public IQueueServiceProxy Proxy { get; set; }
+        public INodeCollection Nodes { get; set; }
     }
 
     public class NodeConfiguration : INodeConfiguration
     {
         public string Address { get; set; }
+        public IQueueServiceProxy Proxy { get; set; }
         public bool IsMaster { get; set; }
         public byte ServerId { get; set; }
         public void DeclareAsNewMaster()

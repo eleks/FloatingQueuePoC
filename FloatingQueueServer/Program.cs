@@ -4,10 +4,11 @@ using System.Linq;
 using System.ServiceModel;
 using System.ServiceModel.Channels;
 using System.ServiceModel.Description;
+using FloatingQueue.Common;
+using FloatingQueue.Common.Proxy;
 using FloatingQueue.Server.Core;
 using FloatingQueue.Server.Exceptions;
 using FloatingQueue.Server.Service;
-using FloatingQueue.ServiceProxy;
 using NDesk.Options;
 
 namespace FloatingQueue.Server
@@ -44,7 +45,8 @@ namespace FloatingQueue.Server
 
         private static ServerConfiguration ParseConfiguration(string[] args)
         {
-            var configuration = new ServerConfiguration { ServerId = 0, Nodes = new NodeCollection() };
+            var configuration = new ServerConfiguration { ServerId = 0 };
+            var nodes = new List<INodeConfiguration>();
             int port = 80;
             bool isMaster = false;
             byte serverId;
@@ -53,42 +55,53 @@ namespace FloatingQueue.Server
                     {
                         {"p|port=", v => int.TryParse(v, out port)},
                         {"m|master", v => isMaster = !string.IsNullOrEmpty(v)},
-                        {"pr|priority|id=",v => configuration.ServerId = (byte.TryParse(v, out serverId) ? serverId : (byte)0)},
-                        {"n|nodes=", v => configuration.Nodes.AddRange(v.Split(';').Select(
+                        {"id=",v => configuration.ServerId = (byte.TryParse(v, out serverId) ? serverId : (byte)0)},
+                        {"n|nodes=", v => nodes.AddRange(v.Split(';').Select(
                                           node => 
                                           { 
                                               var info = node.Split('$');
                                               return new NodeConfiguration
                                               {
                                                   Address = info[0],
+                                                  Proxy = new ManualQueueServiceProxy(info[0]),
                                                   IsMaster = info[1].ToLower() == "master",
                                                   ServerId = (byte.TryParse(info[1], out serverId) ? serverId : (byte)0)
                                               };
-                                          }).OfType<INodeConfiguration>().ToList())}
+                                          }).OfType<INodeConfiguration>())}
                     };
             p.Parse(args);
-            // liaise nodes collection and current node
-            configuration.Nodes.Add(new NodeConfiguration()
-                                        {
-                                            Address = string.Format("net.tcp://localhost:{0}", port),
-                                            IsMaster = isMaster,
-                                            ServerId = configuration.ServerId
-                                        });
 
-            // validate args
-            int mastersCount = configuration.Nodes.Count(n => n.IsMaster);
+            // liaise nodes collection and current node
+            nodes.Add(new NodeConfiguration()
+                  {
+                      Address = string.Format("net.tcp://localhost:{0}", port),
+                      Proxy = null, // we don't want a circular reference
+                      IsMaster = isMaster,
+                      ServerId = configuration.ServerId
+                  });
+            var allNodes = new NodeCollection(nodes);
+            
+            EnsureNodesConfigurationIsValid(allNodes);
+            
+            configuration.Nodes = allNodes;
+            return configuration;
+        }
+
+        private static void EnsureNodesConfigurationIsValid(NodeCollection nodes)
+        {
+            int mastersCount = nodes.All.Count(n => n.IsMaster);
             if (mastersCount != 1)
                 throw new BadConfigurationException("There must be exactly 1 master node");
-            // todo: ensure that every node has it's own unique id
 
-            return configuration;
+            byte maxServerId = nodes.All.Max(n => n.ServerId);
+            byte[] idCounter = new byte[maxServerId + 1];
+            if (nodes.All.Any(node => ++idCounter[node.ServerId] > 1))
+                throw new BadConfigurationException("Every node must have unique Id");
         }
 
         private static void RunHost()
         {
-            ServiceHost host = Core.Server.Configuration.IsMaster ?
-                CreateHostWithMex() :
-                CreateHostWithoutMex();
+            ServiceHost host = CreateHost();
             host.Open();
 
             Core.Server.Log.Info("I am {0}", Core.Server.Configuration.IsMaster ? "master" : "slave");
@@ -103,37 +116,12 @@ namespace FloatingQueue.Server
             Core.Server.Resolve<IConnectionManager>().CloseOutcomingConnections();
         }
 
-        private static ServiceHost CreateHostWithoutMex()
+        private static ServiceHost CreateHost()
         {
             var serviceType = typeof(QueueService);
             var serviceUri = new Uri(Core.Server.Configuration.Address);
 
             var host = new ServiceHost(serviceType, serviceUri);
-
-            return host;
-        }
-
-        // for updating service reference, can be turned off when finished
-        private static ServiceHost CreateHostWithMex()
-        {
-            var serviceType = typeof(QueueService);
-            var serviceUri = new Uri(Core.Server.Configuration.Address);
-
-            var mexUri = new Uri("http://localhost:11011/");
-
-            var host = new ServiceHost(serviceType, serviceUri, mexUri);
-
-            host.AddServiceEndpoint(typeof(IQueueService), new WSHttpBinding(), "");
-            host.AddServiceEndpoint(typeof(IQueueService), new NetTcpBinding(), "");
-
-            var metadataBehavior = new ServiceMetadataBehavior { HttpGetEnabled = true };
-            host.Description.Behaviors.Add(metadataBehavior);
-
-            Binding mexBinding = MetadataExchangeBindings.CreateMexTcpBinding();
-            host.AddServiceEndpoint(
-                typeof(IMetadataExchange),
-                mexBinding,
-                serviceUri + "/mex");
 
             return host;
         }

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.ServiceModel;
 using System.ServiceModel.Channels;
+using FloatingQueue.Common;
 using FloatingQueue.Server.Core;
 using FloatingQueue.Server.EventsLogic;
 

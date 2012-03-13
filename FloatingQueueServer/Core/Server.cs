@@ -2,7 +2,6 @@
 using System.ServiceModel;
 using System.Threading;
 using Autofac;
-using FloatingQueue.ServiceProxy;
 
 namespace FloatingQueue.Server.Core
 {

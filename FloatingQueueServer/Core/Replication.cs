@@ -13,33 +13,33 @@ namespace FloatingQueue.Server.Core
             Core.Server.Resolve<IConnectionManager>().OnConnectionLoss += OnConnectionLoss;
         }
 
-        private static void OnConnectionLoss(string lostConnectionAddress)
+        private static void OnConnectionLoss(int lostServerId)
         {
-            if (!Server.Configuration.IsMaster && lostConnectionAddress == MasterAddress)
+            if (Server.Configuration.ServerId == lostServerId)
+            {
+                throw new ApplicationException("Server can't loose connection with himself");
+            }
+
+            if (!Server.Configuration.IsMaster && lostServerId == MasterId)
             {
                 ChooseNextJediMaster();
             }
-            CleanupBrokenServer(lostConnectionAddress);
+            Server.Configuration.Nodes.RemoveDeadNode(lostServerId);
         }
 
-        private static void CleanupBrokenServer(string lostConnectionAddress)
+        private static int MasterId
         {
-            Server.Configuration.Nodes.RemoveAll(n => n.Address == lostConnectionAddress);
-        }
-
-        private static string MasterAddress
-        {
-            get { return Server.Configuration.Nodes.Master.Address; }
+            get { return Server.Configuration.Nodes.Master.ServerId; }
         }
 
         private static void ChooseNextJediMaster()
         {
-            Server.Configuration.Nodes.Sort((a,b) => a.ServerId - b.ServerId);
+            var sortedSiblings = Server.Configuration.Nodes.All.ToList();
+                sortedSiblings.Sort((a,b) => a.ServerId - b.ServerId);
 
             var oldMaster = Server.Configuration.Nodes.Master;
-            var newMaster = Server.Configuration.Nodes.First(n => n.ServerId > oldMaster.ServerId);
+            var newMaster = sortedSiblings.First(n => n.ServerId > oldMaster.ServerId);
 
-            oldMaster.DeclareAsDeadMaster();
             newMaster.DeclareAsNewMaster();
 
             Server.Log.Warn("Declaring {0} as new Jedi Master",
