@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.ServiceModel;
 
-namespace FloatingQueue.Common.Proxy
+namespace FloatingQueue.Common.Proxy.QueueServiceProxy
 {
     public class SafeQueueServiceProxy : QueueServiceProxyBase
     {
@@ -45,18 +45,6 @@ namespace FloatingQueue.Common.Proxy
             try
             {
                 return base.GetAllNext(aggregateId, version);
-            }
-            finally
-            {
-                DoClose();
-            }
-        }
-
-        public override PingResult Ping(PingParams pingParams)
-        {
-            try
-            {
-                return base.Ping(pingParams);
             }
             finally
             {

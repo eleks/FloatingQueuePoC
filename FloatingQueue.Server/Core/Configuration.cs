@@ -1,9 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using FloatingQueue.Common.Proxy;
 using FloatingQueue.Server.Replication;
-using FloatingQueue.Server.Service;
+using FloatingQueue.Server.Services.Proxy;
 
 namespace FloatingQueue.Server.Core
 {
@@ -14,8 +11,7 @@ namespace FloatingQueue.Server.Core
         bool IsReadonly { get; }
         byte ServerId { get; }
         string Address { get; }
-
-        IQueueServiceProxy Proxy { get; }
+        IInternalQueueServiceProxy Proxy { get; }
     }
 
     public interface INodeConfiguration : IConfiguration
@@ -27,6 +23,7 @@ namespace FloatingQueue.Server.Core
     public interface IServerConfiguration : IConfiguration
     {
         INodeCollection Nodes { get; }
+        string PublicAddress { get; }
     }
 
     public class ServerConfiguration : IServerConfiguration
@@ -34,20 +31,17 @@ namespace FloatingQueue.Server.Core
         public bool IsMaster { get { return Nodes.Self.IsMaster; } }
         public bool IsSynced { get { return Nodes.Self.IsSynced; } }
         public bool IsReadonly { get { return Nodes.Self.IsReadonly; } }
-        
         public byte ServerId { get; set; }
-        public string Address
-        {
-            get { return Nodes.Self.Address; }
-        }
-        public IQueueServiceProxy Proxy { get; set; }
+        public string Address { get { return Nodes.Self.Address; } }
+        public string PublicAddress { get; set; }
+        public IInternalQueueServiceProxy Proxy { get; set; }
         public INodeCollection Nodes { get; set; }
     }
 
     public class NodeConfiguration : INodeConfiguration
     {
         public string Address { get; set; }
-        public IQueueServiceProxy Proxy { get; set; }
+        public IInternalQueueServiceProxy Proxy { get; set; }
         public bool IsMaster { get; set; }
         public bool IsSynced { get; set; }
         public bool IsReadonly { get; set; }

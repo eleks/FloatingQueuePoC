@@ -7,10 +7,12 @@ using FloatingQueue.Common;
 using FloatingQueue.Common.Proxy;
 using FloatingQueue.Server.Core;
 using FloatingQueue.Server.EventsLogic;
+using FloatingQueue.Server.Services;
+using FloatingQueue.Server.Services.Proxy;
 
 namespace FloatingQueue.Server.Replication
 {
-    public static class Syncronization
+    public static class Synchronization
     {
         public static void Init()
         {
@@ -19,20 +21,20 @@ namespace FloatingQueue.Server.Replication
                 // tell everyone that i'm new node in cluster,
                 foreach (var node in Core.Server.Configuration.Nodes.SyncedSiblings)
                 {
-                    var res = node.Proxy.Ping(PingHelper.IntroductionOfNewNodePingParams);
+                    node.Proxy.IntroduceNewNode(ProxyHelper.CurrentNodeInfo);
                     // todo: do something if connection failed?
                 }
 
                 // ask master for all the data
-                Core.Server.Configuration.Nodes.Master.Proxy.Ping(PingHelper.RequestForSyncPingParams);
+                Core.Server.Configuration.Nodes.Master.Proxy.RequestSynchronization(ProxyHelper.CurrentNodeInfo);
             }
         }
 
 
-        public static void ValidateSyncRequest(PingParams pingParams)
+        public static void ValidateSyncRequest(NodeInfo nodeInfo)
         {
             var requester = Core.Server.Configuration.Nodes.Siblings.
-                    Single(n => n.ServerId == pingParams.NodeInfo.ServerId);
+                    Single(n => n.ServerId == nodeInfo.ServerId);
             
             // todo MM: consider introducing new state - Initial, and let sync only this state
             if (requester.IsSynced)

@@ -1,17 +1,20 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.ServiceModel;
 using System.ServiceModel.Channels;
+using System.Text;
 
 namespace FloatingQueue.Common.Proxy
 {
-    public abstract class QueueServiceProxyBase : IQueueService, IDisposable
+    public abstract class ProxyBase<T> :  IDisposable
+        where T : class
     {
         protected EndpointAddress EndpointAddress;
         private readonly Binding m_Binding = new NetTcpBinding();
 
-        private IQueueService m_Client;
-        protected IQueueService Client
+        private T m_Client;
+        protected T Client
         {
             get { return m_Client ?? (m_Client = CreateClient()); }
         }
@@ -27,41 +30,9 @@ namespace FloatingQueue.Common.Proxy
             }
         }
 
-        protected virtual IQueueService CreateClient()
+        protected virtual T CreateClient()
         {
-            return ChannelFactory<IQueueService>.CreateChannel(m_Binding, EndpointAddress);
-        }
-
-        public virtual void Push(string aggregateId, int version, object e)
-        {
-            Client.Push(aggregateId, version, e);
-        }
-
-        public virtual bool TryGetNext(string aggregateId, int version, out object next)
-        {
-            return Client.TryGetNext(aggregateId, version, out next);
-        }
-
-        public virtual IEnumerable<object> GetAllNext(string aggregateId, int version)
-        {
-            return Client.GetAllNext(aggregateId, version);
-        }
-
-        public virtual PingResult Ping(PingParams pingParams)
-        {
-            // todo create enumeration for fault reasons
-            try
-            {
-                return Client.Ping(pingParams);
-            }
-            catch (CommunicationException)
-            {
-                return new PingResult() { ErrorCode = 1 };
-            }
-            catch (TimeoutException)
-            {
-                return new PingResult() { ErrorCode = 2 };
-            }
+            return ChannelFactory<T>.CreateChannel(m_Binding, EndpointAddress);
         }
 
         public void Dispose()
@@ -94,5 +65,7 @@ namespace FloatingQueue.Common.Proxy
                 Channel.Abort();
             m_Client = null;
         }
+
+
     }
 }

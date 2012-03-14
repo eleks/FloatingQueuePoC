@@ -84,6 +84,7 @@ namespace FloatingQueue.Server.Replication
             return replicas > 0;
         }
 
+        // todo MM: consider pinging both addresses - public and internal
         private void StartMonitoringConnections()
         {
             lock (m_MonitoringLock)
@@ -115,11 +116,11 @@ namespace FloatingQueue.Server.Replication
                     Core.Server.Log.Debug("Pinging other servers");
                     foreach (var node in Core.Server.Configuration.Nodes.SyncedSiblings)
                     {
-                        var result = node.Proxy.Ping(PingHelper.CheckConnectionPingParams);
+                        var resultCode = node.Proxy.Ping();
 
-                        Core.Server.Log.Debug("\t{0} - code {1}", node.Address, result.ErrorCode);
+                        Core.Server.Log.Debug("\t{0} - code {1}", node.Address, resultCode);
 
-                        if (result.ErrorCode != 0)
+                        if (resultCode != 0)
                         {
                             FireConnectionLoss(node.ServerId);
                         }

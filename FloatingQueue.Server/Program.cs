@@ -2,14 +2,11 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.ServiceModel;
-using System.ServiceModel.Channels;
-using System.ServiceModel.Description;
-using FloatingQueue.Common;
-using FloatingQueue.Common.Proxy;
 using FloatingQueue.Server.Core;
 using FloatingQueue.Server.Exceptions;
 using FloatingQueue.Server.Replication;
-using FloatingQueue.Server.Service;
+using FloatingQueue.Server.Services.Implementation;
+using FloatingQueue.Server.Services.Proxy;
 using NDesk.Options;
 
 namespace FloatingQueue.Server
@@ -24,7 +21,7 @@ namespace FloatingQueue.Server
                 return;
             }
             Initialize(args);
-            RunHost();
+            RunHosts();
         }
 
         private static void Initialize(string[] args)
@@ -46,15 +43,18 @@ namespace FloatingQueue.Server
 
         private static ServerConfiguration ParseConfiguration(string[] args)
         {
+            const string addressMask = "net.tcp://localhost:{0}";
+
             var configuration = new ServerConfiguration { ServerId = 0 };
             var nodes = new List<INodeConfiguration>();
-            int port = 80;
+            int publicPort = 80, internalPort = 81;
             bool isMaster = false, isSynced = true;
             byte serverId;
 
             var p = new OptionSet()
                     {
-                        {"p|port=", v => int.TryParse(v, out port)},
+                        {"pp|pubport=", v => int.TryParse(v, out publicPort)},
+                        {"ip|intport=", v => int.TryParse(v, out internalPort)},
                         {"m|master", v => isMaster = !string.IsNullOrEmpty(v) },
                         {"s|sync", v => isSynced = string.IsNullOrEmpty(v) },
                         {"id=",v => configuration.ServerId = (byte.TryParse(v, out serverId) ? serverId : (byte)0)},
@@ -65,7 +65,7 @@ namespace FloatingQueue.Server
                                               return new NodeConfiguration
                                               {
                                                   Address = info[0],
-                                                  Proxy = new ManualQueueServiceProxy(info[0]),
+                                                  Proxy = new InternalQueueServiceProxy(info[0]),
                                                   IsMaster = info[1].ToLower() == "master",
                                                   IsSynced = true,
                                                   IsReadonly = false,
@@ -78,7 +78,7 @@ namespace FloatingQueue.Server
             // liaise nodes collection and current node
             nodes.Add(new NodeConfiguration()
                   {
-                      Address = string.Format("net.tcp://localhost:{0}", port),
+                      Address = string.Format(addressMask, internalPort),
                       Proxy = null, // we don't want a circular reference
                       IsMaster = isMaster,
                       IsSynced = isSynced,
@@ -89,7 +89,9 @@ namespace FloatingQueue.Server
 
             EnsureNodesConfigurationIsValid(allNodes);
 
+            configuration.PublicAddress = string.Format(addressMask, publicPort);
             configuration.Nodes = allNodes;
+            
             return configuration;
         }
 
@@ -105,27 +107,34 @@ namespace FloatingQueue.Server
                 throw new BadConfigurationException("Every node must have unique Id");
         }
 
-        private static void RunHost()
+        private static void RunHosts()
         {
-            ServiceHost host = CreateHost();
-            host.Open();
+            ServiceHost publicHost = CreateHost<PublicQueueService>(Core.Server.Configuration.PublicAddress);
+            ServiceHost internalHost = CreateHost<InternalQueueService>(Core.Server.Configuration.Address);
+            
+            publicHost.Open();
+            internalHost.Open();
 
             Core.Server.Log.Info("I am {0}", Core.Server.Configuration.IsMaster ? "master" : "slave");
             Core.Server.Log.Info("Listening:");
-            foreach (var uri in host.BaseAddresses)
-            {
-                Core.Server.Log.Info("\t{0}", uri);
-            }
+
+            Core.Server.Log.Info("\tpublic:");
+            foreach (var uri in publicHost.BaseAddresses)
+                Core.Server.Log.Info("\t\t{0}", uri);
+            
+            Core.Server.Log.Info("\tinternal:");
+            foreach (var uri in internalHost.BaseAddresses)
+                Core.Server.Log.Info("\t\t{0}", uri);
 
             Core.Server.Log.Info("Press <ENTER> to terminate Host");
             Console.ReadLine();
             Core.Server.Resolve<IConnectionManager>().CloseOutcomingConnections();
         }
 
-        private static ServiceHost CreateHost()
+        private static ServiceHost CreateHost<T>(string address)
         {
-            var serviceType = typeof(QueueService);
-            var serviceUri = new Uri(Core.Server.Configuration.Address);
+            var serviceType = typeof(T);
+            var serviceUri = new Uri(address);
 
             var host = new ServiceHost(serviceType, serviceUri);
 
