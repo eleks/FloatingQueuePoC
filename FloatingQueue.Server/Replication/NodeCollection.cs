@@ -35,7 +35,7 @@ namespace FloatingQueue.Server.Replication
             {
                 lock (m_SyncRoot)
                 {
-                    return LiveProxies;
+                    return LiveProxies.ToList();
                 }
             }
         }
@@ -46,7 +46,7 @@ namespace FloatingQueue.Server.Replication
             {
                 lock (m_SyncRoot)
                 {
-                    return LiveProxies.Where(n => n.ServerId != Core.Server.Configuration.ServerId);
+                    return LiveProxies.Where(n => n.ServerId != Core.Server.Configuration.ServerId).ToList();
                 }
             }
         }
@@ -57,7 +57,7 @@ namespace FloatingQueue.Server.Replication
             {
                 lock (m_SyncRoot)
                 {
-                    return LiveProxies.Where(n => n.IsSynced && n.ServerId != Core.Server.Configuration.ServerId);
+                    return LiveProxies.Where(n => n.IsSynced && n.ServerId != Core.Server.Configuration.ServerId).ToList();
                 }
             }
         }
