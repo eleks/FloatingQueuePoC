@@ -10,6 +10,7 @@ namespace FloatingQueue.Server.EventsLogic
         void Push(int version, object e);
         bool TryGetNext(int version, out object next);
         IEnumerable<object> GetAllNext(int version);
+        int LastVersion { get; }
         void Commit();
         void Rollback();
     }
@@ -55,6 +56,17 @@ namespace FloatingQueue.Server.EventsLogic
             lock (m_SyncRoot)
             {
                 return m_InternalStorage.Skip(version + 1).ToList();
+            }
+        }
+
+        public int LastVersion
+        {
+            get
+            {
+                lock (m_SyncRoot)
+                {
+                    return m_InternalStorage.Count;
+                }
             }
         }
 

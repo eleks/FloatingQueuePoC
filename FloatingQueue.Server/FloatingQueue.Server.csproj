@@ -67,6 +67,7 @@
     <Compile Include="Core\Configuration.cs" />
     <Compile Include="Replication\ConnectionManager.cs" />
     <Compile Include="Replication\NodeCollection.cs" />
+    <Compile Include="Replication\PingHelper.cs" />
     <Compile Include="Replication\ReplicationCore.cs" />
     <Compile Include="EventsLogic\AggregateRepository.cs" />
     <Compile Include="EventsLogic\EventAggregate.cs" />
@@ -77,6 +78,7 @@
     <Compile Include="Exceptions\OptimisticLockException.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Replication\Syncronization.cs" />
     <Compile Include="Service\QueueService.cs" />
     <Compile Include="Tests\AggreagateRepositoryTests.cs" />
     <Compile Include="Tests\EventAggregateTests.cs" />

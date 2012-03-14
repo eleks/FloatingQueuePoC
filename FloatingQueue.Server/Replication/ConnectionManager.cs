@@ -1,6 +1,7 @@
 ﻿using System;
 using System.ServiceModel;
 using System.Threading;
+using FloatingQueue.Common;
 
 namespace FloatingQueue.Server.Replication
 {
@@ -33,7 +34,7 @@ namespace FloatingQueue.Server.Replication
             {
                 if (!m_IsConnectionOpened)
                 {
-                    foreach (var node in Core.Server.Configuration.Nodes.Siblings)
+                    foreach (var node in Core.Server.Configuration.Nodes.SyncedSiblings)
                     {
                         node.Proxy.Open();
                         Core.Server.Log.Info("Connected to \t{0}", node.Address);
@@ -45,7 +46,7 @@ namespace FloatingQueue.Server.Replication
         }
         public void CloseOutcomingConnections()
         {
-            foreach (var node in Core.Server.Configuration.Nodes.Siblings)
+            foreach (var node in Core.Server.Configuration.Nodes.SyncedSiblings)
             {
                 node.Proxy.Close();
             }
@@ -60,7 +61,7 @@ namespace FloatingQueue.Server.Replication
                 OpenOutcomingConnections();
             }
             int replicas = 0;
-            foreach (var node in Core.Server.Configuration.Nodes.Siblings)
+            foreach (var node in Core.Server.Configuration.Nodes.SyncedSiblings)
             {
                 try
                 {
@@ -112,13 +113,13 @@ namespace FloatingQueue.Server.Replication
                 while (!stop)
                 {
                     Core.Server.Log.Debug("Pinging other servers");
-                    foreach (var node in Core.Server.Configuration.Nodes.Siblings)
+                    foreach (var node in Core.Server.Configuration.Nodes.SyncedSiblings)
                     {
-                        var result = node.Proxy.Ping();
+                        var result = node.Proxy.Ping(PingHelper.CheckConnectionPingParams);
 
-                        Core.Server.Log.Debug("\t{0} - code {1}", node.Address, result.ResultCode);
+                        Core.Server.Log.Debug("\t{0} - code {1}", node.Address, result.ErrorCode);
 
-                        if (result.ResultCode != 0)
+                        if (result.ErrorCode != 0)
                         {
                             FireConnectionLoss(node.ServerId);
                         }

@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.ServiceModel;
 using System.ServiceModel.Channels;
 using FloatingQueue.Common;
+using FloatingQueue.Common.Proxy;
 using FloatingQueue.Server.Core;
 using FloatingQueue.Server.EventsLogic;
 using FloatingQueue.Server.Replication;
@@ -63,13 +65,48 @@ namespace FloatingQueue.Server.Service
             return aggregate.GetAllNext(version);
         }
 
-        public PingResult Ping()
+        public PingResult Ping(PingParams pingParams)
         {
-            //todo: add some logic here
-            return new PingResult();
+            if (pingParams.NodeInfo == null)
+                throw new ArgumentException("NodeInfo can't be null");
+
+            switch (pingParams.Reason)
+            {
+                case PingReason.ConnectionCheck:
+                    return new PingResult();
+
+                case PingReason.IntroductionOfNewNode:
+                    AddNewNode(pingParams.NodeInfo);
+                    return new PingResult();
+
+                case PingReason.RequestForSyncronization:
+                    // validate request
+                    // create task to share all data with this node
+                    return new PingResult();
+
+                case PingReason.NotificationOfSlaveReadiness:
+                    Core.Server.Configuration.Nodes.Siblings
+                        .Single(n => n.ServerId == pingParams.NodeInfo.ServerId)
+                        .DeclareAsSyncedNode();
+                    return new PingResult();
+
+                default:
+                    throw new NotImplementedException(string.Format("Reason {0} is not supported yet", pingParams.Reason));
+            }
+        }
+
+        private static void AddNewNode(NodeInfo newNode)
+        {
+            Core.Server.Configuration.Nodes.AddNewNode(new NodeConfiguration
+            {
+                Address = newNode.Address,
+                Proxy = new ManualQueueServiceProxy(newNode.Address),
+                ServerId = newNode.ServerId,
+                IsSynced = false,
+                IsMaster = false,
+                IsReadonly = false
+            });
         }
 
     }
-
-
 }

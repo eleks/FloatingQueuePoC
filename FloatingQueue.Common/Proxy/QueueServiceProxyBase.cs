@@ -47,20 +47,20 @@ namespace FloatingQueue.Common.Proxy
             return Client.GetAllNext(aggregateId, version);
         }
 
-        public virtual PingResult Ping()
+        public virtual PingResult Ping(PingParams pingParams)
         {
             // todo create enumeration for fault reasons
             try
             {
-                return Client.Ping();
+                return Client.Ping(pingParams);
             }
             catch (CommunicationException)
             {
-                return new PingResult() { ResultCode = 1 };
+                return new PingResult() { ErrorCode = 1 };
             }
             catch (TimeoutException)
             {
-                return new PingResult() { ResultCode = 2 };
+                return new PingResult() { ErrorCode = 2 };
             }
         }
 

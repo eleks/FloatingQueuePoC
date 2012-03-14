@@ -52,11 +52,11 @@ namespace FloatingQueue.Common.Proxy
             }
         }
 
-        public override PingResult Ping()
+        public override PingResult Ping(PingParams pingParams)
         {
             try
             {
-                return base.Ping();
+                return base.Ping(pingParams);
             }
             finally
             {

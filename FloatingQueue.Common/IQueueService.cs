@@ -14,14 +14,51 @@ namespace FloatingQueue.Common
         [OperationContract]
         IEnumerable<object> GetAllNext(string aggregateId, int version);
         [OperationContract]
-        PingResult Ping();
+        PingResult Ping(PingParams pingParams);
     }
+
+    // TODO MM: move ping to another service
 
     [DataContract]
     public class PingResult
     {
         [DataMember]
-        public int ResultCode;
+        public int ErrorCode;
+    }
+
+    [DataContract]
+    public class PingParams
+    {
+        public PingParams(PingReason reason = PingReason.ConnectionCheck)
+        {
+            Reason = reason;
+        }
+        [DataMember]
+        public PingReason Reason;
+        [DataMember] 
+        public NodeInfo NodeInfo;// todo MM: try to get node info from received address automatically
+    }
+
+    [DataContract]
+    public class NodeInfo
+    {
+        [DataMember]
+        public string Address;
+        [DataMember]
+        public byte ServerId;
+    }
+
+    [DataContract]
+    public enum PingReason
+    {
+        [EnumMember]
+        ConnectionCheck,
+        [EnumMember]
+        IntroductionOfNewNode,
+        [EnumMember]
+        RequestForSyncronization,
+        [EnumMember]
+        NotificationOfSlaveReadiness
     }
 
 }

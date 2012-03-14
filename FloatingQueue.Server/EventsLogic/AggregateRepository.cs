@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 
 namespace FloatingQueue.Server.EventsLogic
@@ -7,6 +8,7 @@ namespace FloatingQueue.Server.EventsLogic
     {
         bool TryGetEventAggregate(string aggregateId, out IEventAggregate aggregate);
         IEventAggregate CreateAggregate(string aggreagateId);
+        List<string> GetAllIds();
     }
 
     public class AggregateRepository : IAggregateRepository
@@ -53,6 +55,19 @@ namespace FloatingQueue.Server.EventsLogic
             finally
             {
                 m_Lock.ExitWriteLock();
+            }
+        }
+
+        public List<string> GetAllIds()
+        {
+            try
+            {
+                m_Lock.EnterReadLock();
+                return m_InternalStorage.Keys.ToList();
+            }
+            finally
+            {
+                m_Lock.ExitReadLock();
             }
         }
     }

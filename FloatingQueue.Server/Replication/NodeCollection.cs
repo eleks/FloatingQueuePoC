@@ -9,10 +9,11 @@ namespace FloatingQueue.Server.Replication
     {
         IEnumerable<INodeConfiguration> All { get; } //todo MM: consider inheriting this interface from IEnumerable
         IEnumerable<INodeConfiguration> Siblings { get; }
+        IEnumerable<INodeConfiguration> SyncedSiblings { get; }
         INodeConfiguration Self { get; }
         INodeConfiguration Master { get; }
         void RemoveDeadNode(int nodeId);
-        // void AddNewSlave(INodeConfiguration slave);
+        void AddNewNode(INodeConfiguration slave);
     }
 
     public class NodeCollection : INodeCollection
@@ -46,6 +47,17 @@ namespace FloatingQueue.Server.Replication
                 lock (m_SyncRoot)
                 {
                     return LiveProxies.Where(n => n.ServerId != Core.Server.Configuration.ServerId);
+                }
+            }
+        }
+
+        public IEnumerable<INodeConfiguration> SyncedSiblings
+        {
+            get
+            {
+                lock (m_SyncRoot)
+                {
+                    return LiveProxies.Where(n => n.IsSynced && n.ServerId != Core.Server.Configuration.ServerId);
                 }
             }
         }
@@ -90,6 +102,15 @@ namespace FloatingQueue.Server.Replication
                 m_DeadNodes[index] = true;
             }
             //m_Proxies.RemoveAll(node => node.ServerId == nodeId);
+        }
+
+        public void AddNewNode(INodeConfiguration slave)
+        {
+            lock(m_SyncRoot)
+            {
+                m_Nodes.Add(slave);
+                m_DeadNodes.Add(false);
+            }
         }
 
         public void RemoveDeadNodes()

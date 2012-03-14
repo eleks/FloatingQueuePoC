@@ -37,7 +37,7 @@ namespace FloatingQueue.Server
             Replication.ReplicationCore.Init();
 
             Core.Server.Log.Info("Nodes:");
-            foreach (var node in configuration.Nodes.Siblings)
+            foreach (var node in configuration.Nodes.SyncedSiblings)
             {
                 Core.Server.Log.Info(node.Address);
             }
@@ -49,13 +49,14 @@ namespace FloatingQueue.Server
             var configuration = new ServerConfiguration { ServerId = 0 };
             var nodes = new List<INodeConfiguration>();
             int port = 80;
-            bool isMaster = false;
+            bool isMaster = false, isSynced = true;
             byte serverId;
 
             var p = new OptionSet()
                     {
                         {"p|port=", v => int.TryParse(v, out port)},
-                        {"m|master", v => isMaster = !string.IsNullOrEmpty(v)},
+                        {"m|master", v => isMaster = !string.IsNullOrEmpty(v) },
+                        {"s|sync", v => isSynced = string.IsNullOrEmpty(v) },
                         {"id=",v => configuration.ServerId = (byte.TryParse(v, out serverId) ? serverId : (byte)0)},
                         {"n|nodes=", v => nodes.AddRange(v.Split(';').Select(
                                           node => 
@@ -66,6 +67,8 @@ namespace FloatingQueue.Server
                                                   Address = info[0],
                                                   Proxy = new ManualQueueServiceProxy(info[0]),
                                                   IsMaster = info[1].ToLower() == "master",
+                                                  IsSynced = true,
+                                                  IsReadonly = false,
                                                   ServerId = (byte.TryParse(info[1], out serverId) ? serverId : (byte)0)
                                               };
                                           }).OfType<INodeConfiguration>())}
@@ -78,12 +81,14 @@ namespace FloatingQueue.Server
                       Address = string.Format("net.tcp://localhost:{0}", port),
                       Proxy = null, // we don't want a circular reference
                       IsMaster = isMaster,
+                      IsSynced = isSynced,
+                      IsReadonly = false,
                       ServerId = configuration.ServerId
                   });
             var allNodes = new NodeCollection(nodes);
-            
+
             EnsureNodesConfigurationIsValid(allNodes);
-            
+
             configuration.Nodes = allNodes;
             return configuration;
         }
