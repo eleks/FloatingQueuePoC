@@ -49,9 +49,6 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="App.Config" />
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="..\QueueServiceProxy\FloatingQueue.Common.csproj">
       <Project>{B9221127-6168-44CE-8B31-0962CBB5CD40}</Project>
       <Name>FloatingQueue.Common</Name>

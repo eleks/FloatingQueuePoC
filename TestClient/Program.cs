@@ -9,12 +9,12 @@ namespace FloatingQueue.TestClient
     class Program
     {
         private static readonly Random ms_Rand = new Random();
-        private const string MasterAddress = "net.tcp://localhost:11081";
+        private const string MasterAddress = "net.tcp://localhost:11080"; //todo MM: write logic to switch master's address when he's dead
 
 
         static void Main(string[] args)
         {
-            var proxy = new AutoQueueProxy(MasterAddress);
+            var proxy = new SafeQueueServiceProxy(MasterAddress);
             bool work = true;
             while (work)
             {
@@ -59,14 +59,14 @@ namespace FloatingQueue.TestClient
 
         private static void DoFlood(int requests)
         {
-            var proxy = new AutoQueueProxy(MasterAddress);
+            var proxy = new SafeQueueServiceProxy(MasterAddress);
             for (int i = 0; i < requests; i++)
             {
                 proxy.Push(ms_Rand.Next().ToString(), -1, ms_Rand.Next().ToString());
             }
         }
 
-        static void DoPush(QueueServiceProxy proxy, string[] args)
+        static void DoPush(QueueServiceProxyBase proxy, string[] args)
         {
             try
             {

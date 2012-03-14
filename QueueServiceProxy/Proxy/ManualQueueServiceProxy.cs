@@ -3,7 +3,7 @@ using System.ServiceModel;
 
 namespace FloatingQueue.Common.Proxy
 {
-    //todo MM : consider using ICommuniationObject if logic extends
+    //todo MM : consider using ICommunicationObject if logic extends
     public interface IManualProxy
     {
         void Open();
@@ -12,15 +12,14 @@ namespace FloatingQueue.Common.Proxy
 
     public interface IQueueServiceProxy : IManualProxy, IQueueService { }
 
-    public class ManualQueueServiceProxy : QueueServiceProxy, IQueueServiceProxy, IEquatable<ManualQueueServiceProxy>
+    public class ManualQueueServiceProxy : QueueServiceProxyBase, IQueueServiceProxy, IEquatable<ManualQueueServiceProxy>
     {
         public ManualQueueServiceProxy(string address)
         {
             EndpointAddress = new EndpointAddress(address);
 
             //todo: think about using WCF's tools to detect failures
-            //var a = Client as ICommunicationObject;
-            //a.Faulted += (sender, args) => { var b = 5; };
+            //Channel.Faulted += (sender, args) => { /*do logic*/ };
         }
 
         public void Open()

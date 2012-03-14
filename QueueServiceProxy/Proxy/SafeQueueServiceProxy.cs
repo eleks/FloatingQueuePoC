@@ -3,10 +3,9 @@ using System.ServiceModel;
 
 namespace FloatingQueue.Common.Proxy
 {
-    public class AutoQueueProxy : QueueServiceProxy
+    public class SafeQueueServiceProxy : QueueServiceProxyBase
     {
-        
-        public AutoQueueProxy(string address)
+        public SafeQueueServiceProxy(string address)
         {
             EndpointAddress = new EndpointAddress(address);
 

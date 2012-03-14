@@ -5,7 +5,7 @@ using System.ServiceModel.Channels;
 
 namespace FloatingQueue.Common.Proxy
 {
-    public abstract class QueueServiceProxy : IQueueService, IDisposable
+    public abstract class QueueServiceProxyBase : IQueueService, IDisposable
     {
         protected EndpointAddress EndpointAddress;
         private readonly Binding m_Binding = new NetTcpBinding();
@@ -13,10 +13,21 @@ namespace FloatingQueue.Common.Proxy
         private IQueueService m_Client;
         protected IQueueService Client
         {
-            get { return m_Client ?? (m_Client = CreateClientCore()); }
+            get { return m_Client ?? (m_Client = CreateClient()); }
         }
 
-        protected virtual IQueueService CreateClientCore()
+        protected ICommunicationObject Channel
+        {
+            get
+            {
+                var channel = Client as ICommunicationObject;
+                if (channel == null)
+                    throw new ApplicationException("Client must implement ICommunicationObject interface");
+                return channel;
+            }
+        }
+
+        protected virtual IQueueService CreateClient()
         {
             return ChannelFactory<IQueueService>.CreateChannel(m_Binding, EndpointAddress);
         }
@@ -58,7 +69,6 @@ namespace FloatingQueue.Common.Proxy
             DoClose();
         }
 
-
         protected void DoClose()
         {
             if (m_Client == null)
@@ -84,17 +94,5 @@ namespace FloatingQueue.Common.Proxy
                 Channel.Abort();
             m_Client = null;
         }
-
-        protected ICommunicationObject Channel
-        {
-            get
-            {
-                var channel = Client as ICommunicationObject;
-                if (channel == null)
-                    throw new ApplicationException("Client must implement ICommunicationObject interface");
-                return channel;
-            }
-        }
-
     }
 }
