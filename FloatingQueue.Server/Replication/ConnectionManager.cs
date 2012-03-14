@@ -17,10 +17,11 @@ namespace FloatingQueue.Server.Replication
 
     public class ConnectionManager : IConnectionManager
     {
-        private readonly object m_MonitoringLock = new object();
         private bool m_IsConnectionOpened = false;
-        private bool m_MonitoringEnabled;
+        private bool m_MonitoringEnabled = false;
+
         private readonly object m_InitializationLock = new object();
+        private readonly object m_MonitoringLock = new object();
 
         public const int MonitorWaitTime = 10000;
 
@@ -38,7 +39,6 @@ namespace FloatingQueue.Server.Replication
                         Core.Server.Log.Info("Connected to \t{0}", node.Address);
                     }
                     StartMonitoringConnections();
-                    OnConnectionLoss += Core.Server.Configuration.Nodes.RemoveDeadNode;
                     m_IsConnectionOpened = true;
                 }
             }
@@ -50,7 +50,6 @@ namespace FloatingQueue.Server.Replication
                 node.Proxy.Close();
             }
             StopMonitoringConnections();
-            OnConnectionLoss -= Core.Server.Configuration.Nodes.RemoveDeadNode;
             m_IsConnectionOpened = false;
         }
 

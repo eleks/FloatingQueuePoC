@@ -18,26 +18,23 @@ namespace FloatingQueue.Server.Replication
                 throw new ApplicationException("Server can't loose connection with himself");
             }
 
-            if (!Core.Server.Configuration.IsMaster && lostServerId == MasterId)
-            {
-                ChooseNextJediMaster();
-            }
+            // first get master id, as he can be deleted
+            int masterId = Core.Server.Configuration.Nodes.Master.ServerId;
+
             Core.Server.Configuration.Nodes.RemoveDeadNode(lostServerId);
+
+            if (!Core.Server.Configuration.IsMaster && lostServerId == masterId)
+            {
+                ChooseNextJediMaster(masterId);
+            }
         }
 
-        private static int MasterId
-        {
-            get { return Core.Server.Configuration.Nodes.Master.ServerId; }
-        }
-
-        private static void ChooseNextJediMaster()
+        private static void ChooseNextJediMaster(int oldMasterId)
         {
             var sortedSiblings = Core.Server.Configuration.Nodes.All.ToList();
                 sortedSiblings.Sort((a,b) => a.ServerId - b.ServerId);
 
-            var oldMaster = Core.Server.Configuration.Nodes.Master;
-            var newMaster = sortedSiblings.First(n => n.ServerId > oldMaster.ServerId);
-
+            var newMaster = sortedSiblings.First(n => n.ServerId > oldMasterId);
             newMaster.DeclareAsNewMaster();
 
             Core.Server.Log.Warn("Declaring {0} as new Jedi Master",

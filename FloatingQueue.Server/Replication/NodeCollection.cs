@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using FloatingQueue.Server.Core;
 
@@ -6,14 +7,13 @@ namespace FloatingQueue.Server.Replication
 {
     public interface INodeCollection
     {
-        IEnumerable<INodeConfiguration> Siblings { get; }
         IEnumerable<INodeConfiguration> All { get; } //todo MM: consider inheriting this interface from IEnumerable
+        IEnumerable<INodeConfiguration> Siblings { get; }
         INodeConfiguration Self { get; }
         INodeConfiguration Master { get; }
         void RemoveDeadNode(int nodeId);
         // void AddNewSlave(INodeConfiguration slave);
     }
-
 
     public class NodeCollection : INodeCollection
     {
@@ -28,29 +28,16 @@ namespace FloatingQueue.Server.Replication
             m_DeadNodes.AddRange(new bool[nodes.Count]);
         }
 
-        //public void OpenProxy(string address)
-        //{
-        //    lock (m_SyncRoot)
-        //    {
-        //        var proxy = new ManualQueueServiceProxy(address);
-        //        m_Proxies.Add(proxy);
-        //        m_DeadProxies.Add(false);
-        //        proxy.Open();
-        //    }
-        //}
-
-        //public void CloseAllProxies()
-        //{
-        //    lock (m_SyncRoot)
-        //    {
-        //        // note MM: if server is closed in small interval after another server has died and before it's been noticed(by ping or by method call), then wcf would fire exceptions. But at the moment they are handled by Proxy class. this may be subject to fix.
-        //        RemoveDeadProxies();
-        //        foreach (var proxy in m_Proxies)
-        //        {
-        //            proxy.Close();
-        //        }
-        //    }
-        //}
+        public IEnumerable<INodeConfiguration> All
+        {
+            get
+            {
+                lock (m_SyncRoot)
+                {
+                    return LiveProxies;
+                }
+            }
+        }
 
         public IEnumerable<INodeConfiguration> Siblings
         {
@@ -80,11 +67,19 @@ namespace FloatingQueue.Server.Replication
             {
                 lock (m_SyncRoot)
                 {
-                    return LiveProxies.Single(n => n.IsMaster);
+                    try
+                    {
+                        return LiveProxies.Single(n => n.IsMaster);
+                    }
+                    catch (InvalidOperationException ex)
+                    {
+                        throw new ApplicationException("There must be exactly 1 master", ex);
+                    }
                 }
             }
         }
 
+        // note MM: if server is closed in small interval after another server has died and before it's been noticed(by ping or by method call), then wcf would fire exceptions. But at the moment they are handled by Proxy class. This may be subject to fix.
         public void RemoveDeadNode(int nodeId)
         {
             lock (m_SyncRoot)
@@ -97,19 +92,7 @@ namespace FloatingQueue.Server.Replication
             //m_Proxies.RemoveAll(node => node.ServerId == nodeId);
         }
 
-
-        public IEnumerable<INodeConfiguration> All
-        {
-            get
-            {
-                lock (m_SyncRoot)
-                {
-                    return m_Nodes;
-                }
-            }
-        }
-
-        public void RemoveDeadProxies()
+        public void RemoveDeadNodes()
         {
             lock (m_SyncRoot)
             {

@@ -52,11 +52,5 @@ namespace FloatingQueue.Server.Core
                 throw new InvalidOperationException("A server who's already a Master cannot declare himself as New Master");
             IsMaster = true;
         }
-        public void DeclareAsDeadMaster()
-        {
-            if (!IsMaster)
-                throw new InvalidOperationException("A server who's not a Master cannot declare himself as dead master");
-            IsMaster = false;
-        }
     }
 }
