@@ -1,11 +1,11 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 11.00
 # Visual Studio 2010
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FloatingQueue.Server", "FloatingQueueServer\FloatingQueue.Server.csproj", "{843EAB20-29A2-4870-8070-72D16AFB2BF4}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FloatingQueue.Server", "FloatingQueue.Server\FloatingQueue.Server.csproj", "{843EAB20-29A2-4870-8070-72D16AFB2BF4}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FloatingQueue.TestClient", "TestClient\FloatingQueue.TestClient.csproj", "{EF17F8D8-82A6-4623-9A99-CEBDA0555C44}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FloatingQueue.TestClient", "FloatingQueue.TestClient\FloatingQueue.TestClient.csproj", "{EF17F8D8-82A6-4623-9A99-CEBDA0555C44}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FloatingQueue.Common", "QueueServiceProxy\FloatingQueue.Common.csproj", "{B9221127-6168-44CE-8B31-0962CBB5CD40}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FloatingQueue.Common", "FloatingQueue.Common\FloatingQueue.Common.csproj", "{B9221127-6168-44CE-8B31-0962CBB5CD40}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
