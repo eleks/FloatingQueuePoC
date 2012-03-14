@@ -39,9 +39,16 @@ namespace FloatingQueue.Server.EventsLogic
             try
             {
                 m_Lock.EnterWriteLock();
-                var aggregate = Core.Server.Resolve<IEventAggregate>(); // todo : use factory/IoC here
-                m_InternalStorage.Add(aggreagateId, aggregate);
-                return aggregate;
+                if (m_InternalStorage.ContainsKey(aggreagateId)) // prevent race condition
+                {
+                    return m_InternalStorage[aggreagateId];
+                }
+                else
+                {
+                    var aggregate = Core.Server.Resolve<IEventAggregate>();
+                    m_InternalStorage.Add(aggreagateId, aggregate);
+                    return aggregate;
+                }
             }
             finally
             {
