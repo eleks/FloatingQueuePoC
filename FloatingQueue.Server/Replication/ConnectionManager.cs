@@ -1,11 +1,9 @@
 ﻿using System;
 using System.ServiceModel;
 using System.Threading;
-using FloatingQueue.Common;
 
 namespace FloatingQueue.Server.Replication
 {
-    // todo: identify lost server by ServerId, not by Address
     public delegate void ConnectionLostHandler(int lostServerId);
 
     public interface IConnectionManager
@@ -13,7 +11,7 @@ namespace FloatingQueue.Server.Replication
         void OpenOutcomingConnections();
         void CloseOutcomingConnections();
         bool TryReplicate(string aggregateId, int version, object e);
-        event ConnectionLostHandler OnConnectionLoss; // todo MM: consider taking some actions when all connections are lost
+        event ConnectionLostHandler OnConnectionLoss; // todo MM: switch to readonly mode when all connections are lost
     }
 
     public class ConnectionManager : IConnectionManager

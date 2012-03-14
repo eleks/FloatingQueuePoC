@@ -1,10 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using Autofac;
+﻿using Autofac;
 using FloatingQueue.Server.Core;
-using FloatingQueue.Server.EventsLogic;
 using NUnit.Framework;
 
 namespace FloatingQueue.Server.Tests

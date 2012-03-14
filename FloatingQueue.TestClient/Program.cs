@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using FloatingQueue.Common.Proxy;
 using FloatingQueue.Common.Proxy.QueueServiceProxy;
 
 namespace FloatingQueue.TestClient

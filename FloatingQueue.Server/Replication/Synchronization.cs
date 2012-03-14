@@ -1,11 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using FloatingQueue.Common;
-using FloatingQueue.Common.Proxy;
-using FloatingQueue.Server.Core;
 using FloatingQueue.Server.EventsLogic;
 using FloatingQueue.Server.Services;
 using FloatingQueue.Server.Services.Proxy;
@@ -36,9 +30,8 @@ namespace FloatingQueue.Server.Replication
             var requester = Core.Server.Configuration.Nodes.Siblings.
                     Single(n => n.ServerId == nodeInfo.ServerId);
             
-            // todo MM: consider introducing new state - Initial, and let sync only this state
             if (requester.IsSynced)
-                throw new ApplicationException("Only unsynced node can request syncronization");
+                throw new ApplicationException("Only unsynced node can request synchronization");
 
             var aggregateIds = AggregateRepository.Instance.GetAllIds();
             // push to reqeuster

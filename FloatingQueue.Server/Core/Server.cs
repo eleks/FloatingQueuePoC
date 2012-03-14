@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-using System.ServiceModel;
-using System.Threading;
+﻿using System.Threading;
 using Autofac;
 
 namespace FloatingQueue.Server.Core

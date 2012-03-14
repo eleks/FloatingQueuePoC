@@ -31,7 +31,7 @@ namespace FloatingQueue.Server
             var componentsManager = new ComponentsManager();
             var container = componentsManager.GetContainer(configuration);
             Core.Server.Init(container);
-            Replication.ReplicationCore.Init();
+            ReplicationCore.Init();
 
             Core.Server.Log.Info("Nodes:");
             foreach (var node in configuration.Nodes.SyncedSiblings)
@@ -95,7 +95,7 @@ namespace FloatingQueue.Server
             return configuration;
         }
 
-        private static void EnsureNodesConfigurationIsValid(NodeCollection nodes)
+        private static void EnsureNodesConfigurationIsValid(INodeCollection nodes)
         {
             int mastersCount = nodes.All.Count(n => n.IsMaster);
             if (mastersCount != 1)
@@ -137,7 +137,6 @@ namespace FloatingQueue.Server
             var serviceUri = new Uri(address);
 
             var host = new ServiceHost(serviceType, serviceUri);
-
             return host;
         }
 
