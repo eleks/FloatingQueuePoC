@@ -1,11 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.ServiceModel;
-using System.Text;
 using System.Threading;
 
-namespace FloatingQueue.Server.Core
+namespace FloatingQueue.Server.Replication
 {
     // todo: identify lost server by ServerId, not by Address
     public delegate void ConnectionLostHandler(int lostServerId);
@@ -35,25 +32,25 @@ namespace FloatingQueue.Server.Core
             {
                 if (!m_IsConnectionOpened)
                 {
-                    foreach (var node in Server.Configuration.Nodes.Siblings)
+                    foreach (var node in Core.Server.Configuration.Nodes.Siblings)
                     {
                         node.Proxy.Open();
-                        Server.Log.Info("Connected to \t{0}", node.Address);
+                        Core.Server.Log.Info("Connected to \t{0}", node.Address);
                     }
                     StartMonitoringConnections();
-                    OnConnectionLoss += Server.Configuration.Nodes.RemoveDeadNode;
+                    OnConnectionLoss += Core.Server.Configuration.Nodes.RemoveDeadNode;
                     m_IsConnectionOpened = true;
                 }
             }
         }
         public void CloseOutcomingConnections()
         {
-            foreach (var node in Server.Configuration.Nodes.Siblings)
+            foreach (var node in Core.Server.Configuration.Nodes.Siblings)
             {
                 node.Proxy.Close();
             }
             StopMonitoringConnections();
-            OnConnectionLoss -= Server.Configuration.Nodes.RemoveDeadNode;
+            OnConnectionLoss -= Core.Server.Configuration.Nodes.RemoveDeadNode;
             m_IsConnectionOpened = false;
         }
 
@@ -64,7 +61,7 @@ namespace FloatingQueue.Server.Core
                 OpenOutcomingConnections();
             }
             int replicas = 0;
-            foreach (var node in Server.Configuration.Nodes.Siblings)
+            foreach (var node in Core.Server.Configuration.Nodes.Siblings)
             {
                 try
                 {
@@ -74,11 +71,11 @@ namespace FloatingQueue.Server.Core
                 catch (CommunicationException)
                 {
                     FireConnectionLoss(node.ServerId);
-                    Server.Log.Warn("Replication at {0} failed. Node is dead", node.Address);
+                    Core.Server.Log.Warn("Replication at {0} failed. Node is dead", node.Address);
                 }
                 catch (Exception ex)
                 {
-                    Server.Log.Warn("Cannot push.", ex);
+                    Core.Server.Log.Warn("Cannot push.", ex);
                 }
             }
 
@@ -115,12 +112,12 @@ namespace FloatingQueue.Server.Core
                 bool stop = false;
                 while (!stop)
                 {
-                    Server.Log.Debug("Pinging other servers");
-                    foreach (var node in Server.Configuration.Nodes.Siblings)
+                    Core.Server.Log.Debug("Pinging other servers");
+                    foreach (var node in Core.Server.Configuration.Nodes.Siblings)
                     {
                         var result = node.Proxy.Ping();
 
-                        Server.Log.Debug("\t{0} - code {1}", node.Address, result.ResultCode);
+                        Core.Server.Log.Debug("\t{0} - code {1}", node.Address, result.ResultCode);
 
                         if (result.ResultCode != 0)
                         {

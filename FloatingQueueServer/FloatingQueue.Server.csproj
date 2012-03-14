@@ -65,9 +65,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Core\Configuration.cs" />
-    <Compile Include="Core\ConnectionManager.cs" />
-    <Compile Include="Core\NodeCollection.cs" />
-    <Compile Include="Core\Replication.cs" />
+    <Compile Include="Replication\ConnectionManager.cs" />
+    <Compile Include="Replication\NodeCollection.cs" />
+    <Compile Include="Replication\ReplicationCore.cs" />
     <Compile Include="EventsLogic\AggregateRepository.cs" />
     <Compile Include="EventsLogic\EventAggregate.cs" />
     <Compile Include="Exceptions\BadConfigurationException.cs" />

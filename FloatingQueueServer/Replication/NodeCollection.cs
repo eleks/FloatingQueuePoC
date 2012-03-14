@@ -1,9 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
-using System.Text;
+using FloatingQueue.Server.Core;
 
-namespace FloatingQueue.Server.Core
+namespace FloatingQueue.Server.Replication
 {
     public interface INodeCollection
     {
@@ -59,7 +58,7 @@ namespace FloatingQueue.Server.Core
             {
                 lock (m_SyncRoot)
                 {
-                    return LiveProxies.Where(n => n.ServerId != Server.Configuration.ServerId);
+                    return LiveProxies.Where(n => n.ServerId != Core.Server.Configuration.ServerId);
                 }
             }
         }
@@ -70,7 +69,7 @@ namespace FloatingQueue.Server.Core
             {
                 lock (m_SyncRoot)
                 {
-                    return LiveProxies.Single(n => n.ServerId == Server.Configuration.ServerId);
+                    return LiveProxies.Single(n => n.ServerId == Core.Server.Configuration.ServerId);
                 }
             }
         }
@@ -134,8 +133,5 @@ namespace FloatingQueue.Server.Core
                 return m_Nodes.Where((t, i) => !m_DeadNodes[i]);
             }
         }
-
-
-
     }
 }

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using FloatingQueue.Common.Proxy;
+using FloatingQueue.Server.Replication;
 using FloatingQueue.Server.Service;
 
 namespace FloatingQueue.Server.Core

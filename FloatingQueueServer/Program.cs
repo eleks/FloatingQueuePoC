@@ -8,6 +8,7 @@ using FloatingQueue.Common;
 using FloatingQueue.Common.Proxy;
 using FloatingQueue.Server.Core;
 using FloatingQueue.Server.Exceptions;
+using FloatingQueue.Server.Replication;
 using FloatingQueue.Server.Service;
 using NDesk.Options;
 
@@ -33,7 +34,7 @@ namespace FloatingQueue.Server
             var componentsManager = new ComponentsManager();
             var container = componentsManager.GetContainer(configuration);
             Core.Server.Init(container);
-            Replication.Init();
+            Replication.ReplicationCore.Init();
 
             Core.Server.Log.Info("Nodes:");
             foreach (var node in configuration.Nodes.Siblings)
