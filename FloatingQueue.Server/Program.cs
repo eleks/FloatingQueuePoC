@@ -31,14 +31,12 @@ namespace FloatingQueue.Server
             var componentsManager = new ComponentsManager();
             var container = componentsManager.GetContainer(configuration);
             Core.Server.Init(container);
-            ReplicationCore.Init();
 
             Core.Server.Log.Info("Nodes:");
             foreach (var node in configuration.Nodes.SyncedSiblings)
             {
-                Core.Server.Log.Info(node.Address);
+                Core.Server.Log.Info("\t{0}", node.Address);
             }
-
         }
 
         private static ServerConfiguration ParseConfiguration(string[] args)
@@ -49,7 +47,6 @@ namespace FloatingQueue.Server
             var nodes = new List<INodeConfiguration>();
             int publicPort = 80, internalPort = 81;
             bool isMaster = false, isSynced = true;
-            byte serverId;
 
             var p = new OptionSet()
                     {
@@ -57,7 +54,7 @@ namespace FloatingQueue.Server
                         {"ip|intport=", v => int.TryParse(v, out internalPort)},
                         {"m|master", v => isMaster = !string.IsNullOrEmpty(v) },
                         {"s|sync", v => isSynced = string.IsNullOrEmpty(v) },
-                        {"id=",v => configuration.ServerId = (byte.TryParse(v, out serverId) ? serverId : (byte)0)},
+                        {"id=",v => configuration.ServerId = byte.Parse(v) },
                         {"n|nodes=", v => nodes.AddRange(v.Split(';').Select(
                                           node => 
                                           { 
@@ -66,10 +63,10 @@ namespace FloatingQueue.Server
                                               {
                                                   Address = info[0],
                                                   Proxy = new InternalQueueServiceProxy(info[0]),
-                                                  IsMaster = info[1].ToLower() == "master",
+                                                  IsMaster = info.Length == 3 && info[2].ToLower() == "master",
                                                   IsSynced = true,
                                                   IsReadonly = false,
-                                                  ServerId = (byte.TryParse(info[1], out serverId) ? serverId : (byte)0)
+                                                  ServerId = byte.Parse(info[1])
                                               };
                                           }).OfType<INodeConfiguration>())}
                     };
@@ -91,7 +88,7 @@ namespace FloatingQueue.Server
 
             configuration.PublicAddress = string.Format(addressMask, publicPort);
             configuration.Nodes = allNodes;
-            
+
             return configuration;
         }
 
@@ -111,7 +108,7 @@ namespace FloatingQueue.Server
         {
             ServiceHost publicHost = CreateHost<PublicQueueService>(Core.Server.Configuration.PublicAddress);
             ServiceHost internalHost = CreateHost<InternalQueueService>(Core.Server.Configuration.Address);
-            
+
             publicHost.Open();
             internalHost.Open();
 
@@ -121,14 +118,23 @@ namespace FloatingQueue.Server
             Core.Server.Log.Info("\tpublic:");
             foreach (var uri in publicHost.BaseAddresses)
                 Core.Server.Log.Info("\t\t{0}", uri);
-            
+
             Core.Server.Log.Info("\tinternal:");
             foreach (var uri in internalHost.BaseAddresses)
                 Core.Server.Log.Info("\t\t{0}", uri);
 
+            DoPostInitializations();
+
             Core.Server.Log.Info("Press <ENTER> to terminate Host");
             Console.ReadLine();
             Core.Server.Resolve<IConnectionManager>().CloseOutcomingConnections();
+        }
+
+        private static void DoPostInitializations()
+        {
+            //todo MM: find a better place for such inits
+            Core.Server.Resolve<IMasterElections>().Init();
+            Core.Server.Resolve<INodeSynchronizer>().Init();
         }
 
         private static ServiceHost CreateHost<T>(string address)

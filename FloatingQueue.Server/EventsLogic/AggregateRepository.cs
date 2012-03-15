@@ -9,6 +9,7 @@ namespace FloatingQueue.Server.EventsLogic
         bool TryGetEventAggregate(string aggregateId, out IEventAggregate aggregate);
         IEventAggregate CreateAggregate(string aggreagateId);
         List<string> GetAllIds();
+        IDictionary<string, int> GetLastVersions();
     }
 
     public class AggregateRepository : IAggregateRepository
@@ -64,6 +65,19 @@ namespace FloatingQueue.Server.EventsLogic
             {
                 m_Lock.EnterReadLock();
                 return m_InternalStorage.Keys.ToList();
+            }
+            finally
+            {
+                m_Lock.ExitReadLock();
+            }
+        }
+
+        public IDictionary<string, int> GetLastVersions()
+        {
+            try
+            {
+                m_Lock.EnterReadLock();
+                return m_InternalStorage.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.LastVersion);
             }
             finally
             {

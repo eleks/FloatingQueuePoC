@@ -65,10 +65,13 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Core\Configuration.cs" />
+    <Compile Include="Exceptions\BusinessLogicException.cs" />
+    <Compile Include="Exceptions\CriticalException.cs" />
+    <Compile Include="Exceptions\IncompatibleDataException.cs" />
     <Compile Include="Replication\ConnectionManager.cs" />
     <Compile Include="Replication\NodeCollection.cs" />
     <Compile Include="Services\Proxy\ProxyHelper.cs" />
-    <Compile Include="Replication\ReplicationCore.cs" />
+    <Compile Include="Replication\MasterElections.cs" />
     <Compile Include="EventsLogic\AggregateRepository.cs" />
     <Compile Include="EventsLogic\EventAggregate.cs" />
     <Compile Include="Exceptions\BadConfigurationException.cs" />
@@ -78,7 +81,7 @@
     <Compile Include="Exceptions\OptimisticLockException.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Replication\Synchronization.cs" />
+    <Compile Include="Replication\NodeSynchronizer.cs" />
     <Compile Include="Services\Implementation\PublicQueueService.cs" />
     <Compile Include="Services\Implementation\QueueServiceBase.cs" />
     <Compile Include="Services\Implementation\InternalQueueService.cs" />

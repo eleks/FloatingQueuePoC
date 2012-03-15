@@ -3,15 +3,20 @@ using System.Linq;
 
 namespace FloatingQueue.Server.Replication
 {
-    public class ReplicationCore
+    public interface IMasterElections
     {
-        public static void  Init()
+        void Init();
+    }
+
+    public class MasterElections : IMasterElections
+    {
+        public void  Init()
         {
             //Core.Server.Resolve<IConnectionManager>().OpenOutcomingConnections();
             Core.Server.Resolve<IConnectionManager>().OnConnectionLoss += OnConnectionLoss;
         }
 
-        private static void OnConnectionLoss(int lostServerId)
+        private void OnConnectionLoss(int lostServerId)
         {
             if (Core.Server.Configuration.ServerId == lostServerId)
             {
@@ -29,7 +34,7 @@ namespace FloatingQueue.Server.Replication
             }
         }
 
-        private static void ChooseNextJediMaster(int oldMasterId)
+        private void ChooseNextJediMaster(int oldMasterId)
         {
             var sortedSiblings = Core.Server.Configuration.Nodes.All.ToList();
                 sortedSiblings.Sort((a,b) => a.ServerId - b.ServerId);

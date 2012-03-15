@@ -7,7 +7,7 @@ namespace FloatingQueue.Server.Core
     public interface IConfiguration
     {
         bool IsMaster { get; }
-        bool IsSynced { get; }
+        bool IsSynced { get; } //note MM: currently all new nodes are not Cynced, but this assumption may be false in future
         bool IsReadonly { get; }
         byte ServerId { get; }
         string Address { get; }
@@ -24,6 +24,7 @@ namespace FloatingQueue.Server.Core
     {
         INodeCollection Nodes { get; }
         string PublicAddress { get; }
+        bool IsSyncing { get; set; }
     }
 
     public class ServerConfiguration : IServerConfiguration
@@ -34,6 +35,7 @@ namespace FloatingQueue.Server.Core
         public byte ServerId { get; set; }
         public string Address { get { return Nodes.Self.Address; } }
         public string PublicAddress { get; set; }
+        public bool IsSyncing{get; set; }
         public IInternalQueueServiceProxy Proxy { get; set; }
         public INodeCollection Nodes { get; set; }
     }

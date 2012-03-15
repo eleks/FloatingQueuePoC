@@ -12,6 +12,8 @@ namespace FloatingQueue.Server.Core
 
             containerBuilder.Register(b => Logger.Instance).As<ILogger>();
             containerBuilder.RegisterType<ConnectionManager>().As<IConnectionManager>().SingleInstance();
+            containerBuilder.RegisterType<NodeSynchronizer>().As<INodeSynchronizer>().SingleInstance();
+            containerBuilder.RegisterType<MasterElections>().As<IMasterElections>().SingleInstance();
             containerBuilder.RegisterType<EventAggregate>().As<IEventAggregate>().InstancePerDependency();
             containerBuilder.RegisterInstance(configuration).As<IServerConfiguration>();
 

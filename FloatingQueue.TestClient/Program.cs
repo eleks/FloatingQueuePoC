@@ -9,7 +9,7 @@ namespace FloatingQueue.TestClient
     class Program
     {
         private static readonly Random ms_Rand = new Random();
-        private const string MasterAddress = "net.tcp://localhost:10080"; //todo MM: write logic to switch master's address when he's dead
+        private const string MasterAddress = "net.tcp://localhost:10081"; //todo MM: write logic to switch master's address when he's dead
 
 
         static void Main(string[] args)

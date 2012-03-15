@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using FloatingQueue.Server.Exceptions;
 
@@ -7,9 +8,11 @@ namespace FloatingQueue.Server.EventsLogic
     public interface IEventAggregate
     {
         void Push(int version, object e);
+        void PushMany(int version, int expectedLastVersion, IEnumerable<object> events);
         bool TryGetNext(int version, out object next);
         IEnumerable<object> GetAllNext(int version);
         int LastVersion { get; }
+        int ExpectedLastVersion { get; }
         void Commit();
         void Rollback();
     }
@@ -19,6 +22,7 @@ namespace FloatingQueue.Server.EventsLogic
         private readonly List<object> m_InternalStorage = new List<object>();
         private readonly object m_SyncRoot = new object();
         private bool m_HasUncommitedChanges;
+        private int m_ExpectedLastVersion;
 
         public void Push(int version, object e)
         {
@@ -30,6 +34,20 @@ namespace FloatingQueue.Server.EventsLogic
                 }
                 m_InternalStorage.Add(e);
                 m_HasUncommitedChanges = true;
+            }
+        }
+
+        public void PushMany(int version, int expectedLastVersion, IEnumerable<object> events)
+        {
+            lock (m_SyncRoot)
+            {
+                if (version != -1 && version != m_InternalStorage.Count)
+                {
+                    throw new OptimisticLockException();
+                }
+                m_InternalStorage.AddRange(events);
+                m_HasUncommitedChanges = true;
+                m_ExpectedLastVersion = expectedLastVersion;
             }
         }
 
@@ -54,7 +72,7 @@ namespace FloatingQueue.Server.EventsLogic
         {
             lock (m_SyncRoot)
             {
-                return m_InternalStorage.Skip(version + 1).ToList();
+                return m_InternalStorage.Skip(version).ToList();
             }
         }
 
@@ -65,6 +83,17 @@ namespace FloatingQueue.Server.EventsLogic
                 lock (m_SyncRoot)
                 {
                     return m_InternalStorage.Count;
+                }
+            }
+        }
+
+        public int ExpectedLastVersion
+        {
+            get
+            {
+                lock (m_SyncRoot)
+                {
+                    return m_ExpectedLastVersion;
                 }
             }
         }
