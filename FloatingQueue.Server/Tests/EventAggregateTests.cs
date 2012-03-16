@@ -64,6 +64,16 @@ namespace FloatingQueue.Server.Tests
             CollectionAssert.AreEqual(events, aggregate.GetRange(0, 3));
         }
 
+
+        [Test, Combinatorial]
+        public void GetRangeTest([Values(0, 1)]int version, [Values(0, 1)]int count)
+        {
+            var aggregate = new EventAggregate();
+            var events = new[] { "a", "b", "c" };
+            aggregate.PushMany(-1, events);
+            CollectionAssert.AreEqual(events.ToList().GetRange(version, count), aggregate.GetRange(version, count));
+        }
+
         [Test, ExpectedException(typeof(OptimisticLockException))]
         public void PushMany_OptimisticLock_Test()
         {
