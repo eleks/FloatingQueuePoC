@@ -112,6 +112,15 @@ namespace FloatingQueue.Server.Tests
         }
 
         [Test]
+        public void AddNewNodeForbidsIdDuplication()
+        {
+            var nodes = CreateNodes(2);
+            var nodesCollection = new NodeCollection(nodes);
+
+            Assert.Throws<ArgumentException>(() => nodesCollection.AddNewNode(new NodeConfiguration{ServerId = 1}));
+        }
+
+        [Test]
         public void CannotAddSecondMasterTest()
         {
             var nodes = CreateNodes(NodesCount);

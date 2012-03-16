@@ -1,4 +1,5 @@
-﻿using Autofac;
+﻿using System;
+using Autofac;
 using FloatingQueue.Server.EventsLogic;
 using FloatingQueue.Server.Replication;
 
@@ -8,6 +9,11 @@ namespace FloatingQueue.Server.Core
     {
         public IContainer GetContainer(IServerConfiguration configuration)
         {
+            if(configuration == null)
+            {
+                throw new ArgumentNullException("configuration");
+            }
+
             var containerBuilder = new ContainerBuilder();
 
             containerBuilder.Register(b => Logger.Instance).As<ILogger>();
