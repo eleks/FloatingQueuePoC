@@ -23,7 +23,7 @@ namespace FloatingQueue.Server.Services.Implementation
 
             var newNode = new NodeConfiguration
             {
-                Address = nodeInfo.Address,
+                InternalAddress = nodeInfo.Address,
                 Proxy = new InternalQueueServiceProxy(nodeInfo.Address),
                 ServerId = nodeInfo.ServerId,
                 IsSynced = false,

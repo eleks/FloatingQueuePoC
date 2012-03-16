@@ -35,7 +35,7 @@ namespace FloatingQueue.Server.Replication
                     foreach (var node in Core.Server.Configuration.Nodes.SyncedSiblings)
                     {
                         node.Proxy.Open();
-                        Core.Server.Log.Info("Connected to \t{0}", node.Address);
+                        Core.Server.Log.Info("Connected to \t{0}", node.InternalAddress);
                     }
                     StartMonitoringConnections();
                     m_IsConnectionOpened = true;
@@ -69,7 +69,7 @@ namespace FloatingQueue.Server.Replication
                 catch (CommunicationException)
                 {
                     FireConnectionLoss(node.ServerId);
-                    Core.Server.Log.Warn("Replication at {0} failed. Node is dead", node.Address);
+                    Core.Server.Log.Warn("Replication at {0} failed. Node is dead", node.InternalAddress);
                 }
                 catch (Exception ex)
                 {
@@ -116,7 +116,7 @@ namespace FloatingQueue.Server.Replication
                     {
                         var resultCode = node.Proxy.Ping();
 
-                        Core.Server.Log.Debug("\t{0} - code {1}", node.Address, resultCode);
+                        Core.Server.Log.Debug("\t{0} - code {1}", node.InternalAddress, resultCode);
 
                         if (resultCode != 0)
                         {
