@@ -41,16 +41,16 @@ namespace FloatingQueue.Server.Services.Implementation
             Core.Server.Resolve<INodeSynchronizer>().StartBackgroundSync(serverId, aggregateVersions);
         }
 
-        public void ReceiveAggregateEvents(string aggregateId, int version, int expectedLastVersion, IEnumerable<object> events)
+        public void ReceiveAggregateEvents(string aggregateId, int version, IEnumerable<object> events)
         {
-            Core.Server.Log.Info("Receiving aggregate events. AggregateId = {0}, version = {1}, expectedVersion = {2}",
-                aggregateId, version, expectedLastVersion);
+            Core.Server.Log.Info("Receiving aggregate events. AggregateId = {0}, version = {1}",
+                aggregateId, version);
 
             if (Core.Server.Configuration.IsSynced)
                 throw new BusinessLogicException("Only Unsynced Node can receive aggregate events in 1 batch");
 
             var aggregate = GetEventAggregate(aggregateId);
-            aggregate.PushMany(version, expectedLastVersion, events);
+            aggregate.PushMany(version, events);
         }
 
         public void NotificateAllAggregatesSent(IDictionary<string, int> writtenAggregatesVersions)

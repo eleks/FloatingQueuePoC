@@ -57,6 +57,19 @@ namespace FloatingQueue.Server.EventsLogic
             }
         }
 
+        //public IDictionary<string, IEventAggregate> GetAllAggregates()
+        //{
+        //    try
+        //    {
+        //        m_Lock.EnterReadLock();
+        //        return new Dictionary<string, IEventAggregate>(m_InternalStorage);
+        //    }
+        //    finally
+        //    {
+        //        m_Lock.ExitReadLock();
+        //    }
+        //}
+
         public List<string> GetAllIds()
         {
             try
