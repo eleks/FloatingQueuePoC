@@ -71,7 +71,7 @@ namespace FloatingQueue.Server.Services.Proxy
 
         public void Open()
         {
-            Channel.Open();
+            DoOpen();
         }
 
         public void Close()

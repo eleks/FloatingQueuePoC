@@ -8,7 +8,6 @@ namespace FloatingQueue.Common.Proxy
         where T : class
     {
         protected EndpointAddress EndpointAddress;
-        private readonly Binding m_Binding = new NetTcpBinding();
 
         private T m_Client;
         protected T Client
@@ -16,7 +15,7 @@ namespace FloatingQueue.Common.Proxy
             get { return m_Client ?? (m_Client = CreateClient()); }
         }
 
-        protected ICommunicationObject Channel
+        private ICommunicationObject Channel
         {
             get
             {
@@ -29,12 +28,17 @@ namespace FloatingQueue.Common.Proxy
 
         protected virtual T CreateClient()
         {
-            return ChannelFactory<T>.CreateChannel(m_Binding, EndpointAddress);
+            return CommunicationProvider.Instance.CreateChannel<T>(EndpointAddress);
         }
 
         public void Dispose()
         {
             DoClose();
+        }
+
+        protected void DoOpen()
+        {
+            Channel.Open();
         }
 
         protected void DoClose()

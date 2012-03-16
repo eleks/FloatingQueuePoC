@@ -2,11 +2,16 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.ServiceModel;
+using FloatingQueue.Common;
+using FloatingQueue.Common.TCPProvider;
+using FloatingQueue.Common.WCF;
 using FloatingQueue.Server.Core;
 using FloatingQueue.Server.Exceptions;
 using FloatingQueue.Server.Replication;
+using FloatingQueue.Server.Services;
 using FloatingQueue.Server.Services.Implementation;
 using FloatingQueue.Server.Services.Proxy;
+using FloatingQueue.Server.TCP;
 using NDesk.Options;
 
 namespace FloatingQueue.Server
@@ -20,6 +25,17 @@ namespace FloatingQueue.Server
                 ShowUsage();
                 return;
             }
+            // WCF
+            //var provider = new WCFCommunicationProvider();
+
+            // TCP
+            var provider = new TCPCommunicationProvider();
+            provider.RegisterHostImplementation<PublicQueueService>(() => new TCPPublicQueueService());
+            provider.RegisterHostImplementation<InternalQueueService>(() => new TCPInternalQueueService());
+            provider.RegisterChannelImplementation<IInternalQueueService>(() => new TCPInternalQueueServiceProxy());
+
+            CommunicationProvider.Init(provider);
+
             Initialize(args);
             RunHosts();
         }
@@ -109,34 +125,34 @@ namespace FloatingQueue.Server
 
         private static void RunHosts()
         {
-            ServiceHost publicHost = CreateHost<PublicQueueService>(Core.Server.Configuration.PublicAddress);
-            ServiceHost internalHost = CreateHost<InternalQueueService>(Core.Server.Configuration.Address);
+            var publicHost = CreateHost<PublicQueueService>(Core.Server.Configuration.PublicAddress);
+            var internalHost = CreateHost<InternalQueueService>(Core.Server.Configuration.Address);
             
-            publicHost.Open();
             internalHost.Open();
+            publicHost.Open();
 
             Core.Server.Log.Info("I am {0}", Core.Server.Configuration.IsMaster ? "master" : "slave");
             Core.Server.Log.Info("Listening:");
 
-            Core.Server.Log.Info("\tpublic:");
-            foreach (var uri in publicHost.BaseAddresses)
-                Core.Server.Log.Info("\t\t{0}", uri);
+            //Core.Server.Log.Info("\tpublic:");
+            //foreach (var uri in publicHost.BaseAddresses)
+            //    Core.Server.Log.Info("\t\t{0}", uri);
             
-            Core.Server.Log.Info("\tinternal:");
-            foreach (var uri in internalHost.BaseAddresses)
-                Core.Server.Log.Info("\t\t{0}", uri);
+            //Core.Server.Log.Info("\tinternal:");
+            //foreach (var uri in internalHost.BaseAddresses)
+            //    Core.Server.Log.Info("\t\t{0}", uri);
 
             Core.Server.Log.Info("Press <ENTER> to terminate Host");
             Console.ReadLine();
             Core.Server.Resolve<IConnectionManager>().CloseOutcomingConnections();
+            //
+            publicHost.Close();
+            internalHost.Close();
         }
 
-        private static ServiceHost CreateHost<T>(string address)
+        private static ICommunicationObject CreateHost<T>(string address)
         {
-            var serviceType = typeof(T);
-            var serviceUri = new Uri(address);
-
-            var host = new ServiceHost(serviceType, serviceUri);
+            var host = CommunicationProvider.Instance.CreateHost<T>(address);
             return host;
         }
 

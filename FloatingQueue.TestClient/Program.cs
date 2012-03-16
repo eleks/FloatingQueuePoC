@@ -1,8 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.ServiceModel;
 using System.Threading.Tasks;
+using FloatingQueue.Common;
 using FloatingQueue.Common.Proxy.QueueServiceProxy;
+using FloatingQueue.Common.TCPProvider;
+using FloatingQueue.Common.WCF;
 
 namespace FloatingQueue.TestClient
 {
@@ -11,10 +15,26 @@ namespace FloatingQueue.TestClient
         private static readonly Random ms_Rand = new Random();
         private const string MasterAddress = "net.tcp://localhost:10080"; //todo MM: write logic to switch master's address when he's dead
 
+        private static QueueServiceProxyBase CreateProxy()
+        {
+            //return new SafeQueueServiceProxy(MasterAddress);
+            return new QueueServiceProxyBase(MasterAddress);
+        }
 
         static void Main(string[] args)
         {
-            var proxy = new SafeQueueServiceProxy(MasterAddress);
+            // WCF
+            //var provider = new WCFCommunicationProvider();
+
+            // TCP
+            var provider = new TCPCommunicationProvider();
+            provider.RegisterChannelImplementation<IQueueService>( () => new TCPQueueServiceProxy() );
+
+            CommunicationProvider.Init(provider);
+
+            //
+            Console.Out.WriteLine("Test Client");
+            var proxy = CreateProxy();
             bool work = true;
             while (work)
             {
@@ -59,10 +79,12 @@ namespace FloatingQueue.TestClient
 
         private static void DoFlood(int requests)
         {
-            var proxy = new SafeQueueServiceProxy(MasterAddress);
-            for (int i = 0; i < requests; i++)
+            using (var proxy = CreateProxy())
             {
-                proxy.Push(ms_Rand.Next().ToString(), -1, ms_Rand.Next().ToString());
+                for (int i = 0; i < requests; i++)
+                {
+                    proxy.Push(ms_Rand.Next().ToString(), -1, ms_Rand.Next().ToString());
+                }
             }
         }
 

@@ -6,8 +6,8 @@ namespace FloatingQueue.Common.Proxy.QueueServiceProxy
     public class SafeQueueServiceProxy : QueueServiceProxyBase
     {
         public SafeQueueServiceProxy(string address)
+            : base(address)
         {
-            EndpointAddress = new EndpointAddress(address);
 
             //todo: think about using WCF's tools to detect failures
             //var a = Client as ICommunicationObject;

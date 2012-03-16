@@ -85,6 +85,9 @@
     <Compile Include="Services\IInternalQueueService.cs" />
     <Compile Include="Services\Proxy\IInternalQueueServiceProxy.cs" />
     <Compile Include="Services\Proxy\InternalQueueServiceProxy.cs" />
+    <Compile Include="TCP\TCPInternalQueueService.cs" />
+    <Compile Include="TCP\TCPInternalQueueServiceProxy.cs" />
+    <Compile Include="TCP\TCPPublicQueueService.cs" />
     <Compile Include="Tests\AggreagateRepositoryTests.cs" />
     <Compile Include="Tests\EventAggregateTests.cs" />
     <Compile Include="Tests\TestBase.cs" />
