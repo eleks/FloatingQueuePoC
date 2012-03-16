@@ -72,7 +72,7 @@ namespace FloatingQueue.Server.EventsLogic
         {
             lock (m_SyncRoot)
             {
-                return m_InternalStorage.Skip(version).ToList();
+                return m_InternalStorage.Skip(version + 1).ToList();
             }
         }
 

@@ -14,11 +14,9 @@ namespace FloatingQueue.Server.EventsLogic
 
     public class AggregateRepository : IAggregateRepository
     {
-        private static readonly AggregateRepository ms_Instance = new AggregateRepository(); // todo: replace singleton with IoC
-
-        public static AggregateRepository Instance
+        public static IAggregateRepository Instance
         {
-            get { return ms_Instance; }
+            get { return Core.Server.Resolve<IAggregateRepository>(); } // todo: it makes sense to cache it in static variable due to performance reasons
         }
 
         private readonly Dictionary<string, IEventAggregate> m_InternalStorage = new Dictionary<string, IEventAggregate>();
@@ -72,6 +70,7 @@ namespace FloatingQueue.Server.EventsLogic
             }
         }
 
+        // todo: refactor this method to GetAllAggregates + (extension method)GetLastVersions
         public IDictionary<string, int> GetLastVersions()
         {
             try
