@@ -79,7 +79,7 @@ namespace FloatingQueue.Server.Tests
             var sibling2 = new Mock<INodeConfiguration>();
             sibling2.SetupGet(m => m.ServerId).Returns(3);
 
-            m_NodesCollectionMock.SetupGet(m => m.All).Returns(new[] {sibling1.Object, sibling2.Object});
+            m_NodesCollectionMock.SetupGet(m => m.All).Returns(new[] { sibling1.Object, sibling2.Object }.ToList().AsReadOnly());
 
             m_NodesCollectionMock.Setup(m => m.RemoveDeadNode(lostServerId)).Verifiable();
 

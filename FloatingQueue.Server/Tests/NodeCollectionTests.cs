@@ -137,7 +137,7 @@ namespace FloatingQueue.Server.Tests
             var nodes = CreateNodes(NodesCount);
             var nodesColection = new NodeCollection(nodes);
 
-            nodesColection.AddNewNode(new NodeConfiguration());
+            nodesColection.AddNewNode(new NodeConfiguration() {ServerId = 19});
 
             Assert.AreEqual(NodesCount + 1, nodesColection.All.Count());
         }
@@ -160,12 +160,6 @@ namespace FloatingQueue.Server.Tests
             nodesColection.RemoveDeadNode(1);
 
             Assert.AreEqual(NodesCount - 1, nodesColection.All.Count());
-        }
-
-        [Test]
-        public void ReturnTypeMustBeMostConcreteTest()
-        {
-            Assert.Fail("Remove IEnumerables");
         }
 
         private List<INodeConfiguration> CreateNodes(int count, Func<byte, byte> idSelector, Func<byte, bool> masterSelector)

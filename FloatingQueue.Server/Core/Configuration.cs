@@ -72,5 +72,40 @@ namespace FloatingQueue.Server.Core
                 throw new InvalidOperationException("Master node cannot declare itself as Synced");
             IsSynced = true;
         }
+
+        public bool Equals(NodeConfiguration other)
+        {
+            if (ReferenceEquals(null, other))
+            {
+                return false;
+            }
+            if (ReferenceEquals(this, other))
+            {
+                return true;
+            }
+            return other.ServerId == ServerId;
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (ReferenceEquals(null, obj))
+            {
+                return false;
+            }
+            if (ReferenceEquals(this, obj))
+            {
+                return true;
+            }
+            if (obj.GetType() != typeof (NodeConfiguration))
+            {
+                return false;
+            }
+            return Equals((NodeConfiguration) obj);
+        }
+
+        public override int GetHashCode()
+        {
+            return ServerId.GetHashCode();
+        }
     }
 }

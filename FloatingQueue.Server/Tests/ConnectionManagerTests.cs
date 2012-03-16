@@ -26,8 +26,8 @@ namespace FloatingQueue.Server.Tests
         {
             base.RegisterMocks(containerBuilder);
             m_SyncedSiblingMock.SetupGet(m => m.Proxy).Returns(m_SyncedSiblingProxyMock.Object);
-            m_SiblingsMock.SetupGet(m => m.SyncedSiblings).Returns(new[] {m_SyncedSiblingMock.Object});
-            m_SiblingsMock.SetupGet(m => m.Siblings).Returns(new[] {m_SyncedSiblingMock.Object, m_NonSyncedSiblingMock.Object});
+            m_SiblingsMock.SetupGet(m => m.SyncedSiblings).Returns(new[] {m_SyncedSiblingMock.Object}.ToList().AsReadOnly());
+            m_SiblingsMock.SetupGet(m => m.Siblings).Returns(new[] { m_SyncedSiblingMock.Object, m_NonSyncedSiblingMock.Object }.ToList().AsReadOnly());
             m_ServerConfigurationMock.SetupGet(m => m.PingTimeout).Returns(10);
             m_ServerConfigurationMock.SetupGet(m => m.Nodes).Returns(m_SiblingsMock.Object);
             containerBuilder.RegisterInstance(m_ServerConfigurationMock.Object).As<IServerConfiguration>();
