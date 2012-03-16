@@ -89,6 +89,7 @@
     <Compile Include="Services\Proxy\IInternalQueueServiceProxy.cs" />
     <Compile Include="Services\Proxy\InternalQueueServiceProxy.cs" />
     <Compile Include="Tests\AggreagateRepositoryTests.cs" />
+    <Compile Include="Tests\ConfigurationTests.cs" />
     <Compile Include="Tests\EventAggregateTests.cs" />
     <Compile Include="Tests\TestBase.cs" />
     <Compile Include="Tests\TestLogger.cs" />
