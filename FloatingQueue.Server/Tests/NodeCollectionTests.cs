@@ -169,7 +169,8 @@ namespace FloatingQueue.Server.Tests
             {
                 nodes.Add(new NodeConfiguration
                               {
-                                  Address = String.Format("net.tcp://localhost:{0}", 11080 + i),
+                                  //todo TR: rerun test after NodeConfiguration Class has been changed
+                                  InternalAddress = String.Format("net.tcp://localhost:{0}", 11080 + i),
                                   IsReadonly = false,
                                   IsSynced = true,
                                   Proxy = m_InternalQueueServiceProxyMock.Object,

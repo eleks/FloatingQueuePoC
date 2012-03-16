@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using FloatingQueue.Common;
 using FloatingQueue.Server.EventsLogic;
 using FloatingQueue.Server.Exceptions;
@@ -59,6 +60,14 @@ namespace FloatingQueue.Server.Services.Implementation
 
             var aggregate = GetEventAggregate(aggregateId);
             return aggregate.GetAllNext(version);
+        }
+
+        public ClusterMetadata GetClusterMetadata()
+        {
+            //todo: pinging other servers here would make client's life a bit easier
+            var nodes = Core.Server.Configuration.Nodes.All
+                .Select(n => new Node {Address = n.PublicAddress, IsMaster = n.IsMaster}).ToList();
+            return new ClusterMetadata(nodes);
         }
 
         protected static IEventAggregate GetEventAggregate(string aggregateId)

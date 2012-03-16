@@ -10,7 +10,8 @@ namespace FloatingQueue.Server.Core
         bool IsSynced { get; } //note MM: currently all new nodes are not Cynced, but this assumption may be false in future
         bool IsReadonly { get; }
         byte ServerId { get; }
-        string Address { get; }
+        string InternalAddress { get; }
+        string PublicAddress { get; }
         IInternalQueueServiceProxy Proxy { get; }
     }
 
@@ -23,7 +24,6 @@ namespace FloatingQueue.Server.Core
     public interface IServerConfiguration : IConfiguration
     {
         INodeCollection Nodes { get; }
-        string PublicAddress { get; }
         bool IsSyncing { get; set; }
         int PingTimeout { get; }
     }
@@ -34,22 +34,18 @@ namespace FloatingQueue.Server.Core
         public bool IsSynced { get { return Nodes.Self.IsSynced; } }
         public bool IsReadonly { get { return Nodes.Self.IsReadonly; } }
         public byte ServerId { get; set; }
-        public string Address { get { return Nodes.Self.Address; } }
-        public string PublicAddress { get; set; }
-        public bool IsSyncing{get; set; }
-
-        public int PingTimeout
-        {
-            get { return 10000; }
-        }
-
+        public string InternalAddress { get { return Nodes.Self.InternalAddress; } }
+        public string PublicAddress { get { return Nodes.Self.PublicAddress; } }
+        public bool IsSyncing { get; set; }
+        public int PingTimeout { get { return 10000; }}
         public IInternalQueueServiceProxy Proxy { get; set; }
         public INodeCollection Nodes { get; set; }
     }
 
     public class NodeConfiguration : INodeConfiguration
     {
-        public string Address { get; set; }
+        public string InternalAddress { get; set; }
+        public string PublicAddress { get; set; }
         public IInternalQueueServiceProxy Proxy { get; set; }
         public bool IsMaster { get; set; }
         public bool IsSynced { get; set; }
@@ -63,7 +59,6 @@ namespace FloatingQueue.Server.Core
                 throw new InvalidOperationException("A node who's already a Master cannot declare itself as New Master");
             IsMaster = true;
         }
-
         public void DeclareAsSyncedNode()
         {
             if (IsSynced)

@@ -12,7 +12,7 @@ namespace FloatingQueue.Server.Services.Proxy
             {
                 return new NodeInfo()
                            {
-                               Address = Core.Server.Configuration.Address,
+                               Address = Core.Server.Configuration.InternalAddress,
                                ServerId = CurrentServerId
                            };
             }

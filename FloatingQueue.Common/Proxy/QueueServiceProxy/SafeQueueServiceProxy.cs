@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.ServiceModel;
 
@@ -5,6 +6,10 @@ namespace FloatingQueue.Common.Proxy.QueueServiceProxy
 {
     public class SafeQueueServiceProxy : QueueServiceProxyBase
     {
+        public delegate void ClientCallFailedHandler();
+
+        public event ClientCallFailedHandler OnClientCallFailed;
+
         public SafeQueueServiceProxy(string address)
         {
             EndpointAddress = new EndpointAddress(address);
@@ -20,6 +25,10 @@ namespace FloatingQueue.Common.Proxy.QueueServiceProxy
             {
                 base.Push(aggregateId, version, e);
             }
+            catch (Exception)
+            {
+                FireClientCallFailed();
+            }
             finally
             {
                 DoClose();
@@ -31,8 +40,14 @@ namespace FloatingQueue.Common.Proxy.QueueServiceProxy
             try
             {
                 // out parameters cannot be used inside anonymous methods,
-                // otherwise  wrapper would be used
+                // otherwise wrapper action would be used
                 return base.TryGetNext(aggregateId, version, out next);
+            }
+            catch (Exception)
+            {
+                FireClientCallFailed();
+                next = null;
+                return false;
             }
             finally
             {
@@ -46,10 +61,38 @@ namespace FloatingQueue.Common.Proxy.QueueServiceProxy
             {
                 return base.GetAllNext(aggregateId, version);
             }
+            catch (Exception)
+            {
+                FireClientCallFailed();
+                return null;
+            }
             finally
             {
                 DoClose();
             }
+        }
+
+        public override ClusterMetadata GetClusterMetadata()
+        {
+            try
+            {
+                return base.GetClusterMetadata();
+            }
+            catch (Exception)
+            {
+               FireClientCallFailed();
+               return null;
+            }
+            finally
+            {
+                DoClose();
+            }
+        }
+
+        private void FireClientCallFailed()
+        {
+            if (OnClientCallFailed != null)
+                OnClientCallFailed();
         }
     }
 }

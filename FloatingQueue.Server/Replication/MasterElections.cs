@@ -45,7 +45,7 @@ namespace FloatingQueue.Server.Replication
             Core.Server.Log.Warn("Declaring {0} as new Jedi Master",
                 Core.Server.Configuration.IsMaster
                 ? "Myself"
-                : string.Format("server no {0} at {1}", newMaster.ServerId, newMaster.Address));
+                : string.Format("server no {0} at {1}", newMaster.ServerId, newMaster.InternalAddress));
         }
     }
 }

@@ -25,7 +25,7 @@ namespace FloatingQueue.Server.Tests
         public void ServerConfigurationTest([Values(false, true)]bool isMaster, [Values(false, true)]bool isSynced, [Values(false, true)]bool isReadonly, [Values("a", "b")]string address)
         {
             var nodeMock = new Mock<INodeConfiguration>();
-            nodeMock.SetupGet(m => m.Address).Returns(address);
+            nodeMock.SetupGet(m => m.InternalAddress).Returns(address);
             nodeMock.SetupGet(m => m.IsMaster).Returns(isMaster);
             nodeMock.SetupGet(m => m.IsSynced).Returns(isSynced);
             nodeMock.SetupGet(m => m.IsReadonly).Returns(isReadonly);
@@ -38,7 +38,7 @@ namespace FloatingQueue.Server.Tests
             Assert.AreEqual(isMaster, serverConfiguration.IsMaster);
             Assert.AreEqual(isSynced, serverConfiguration.IsSynced);
             Assert.AreEqual(isReadonly, serverConfiguration.IsReadonly);
-            Assert.AreEqual(address, serverConfiguration.Address);
+            Assert.AreEqual(address, serverConfiguration.InternalAddress);
         }
 
         [Test, ExpectedException(typeof(InvalidOperationException))]
