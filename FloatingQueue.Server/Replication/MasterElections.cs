@@ -20,7 +20,7 @@ namespace FloatingQueue.Server.Replication
         {
             if (Core.Server.Configuration.ServerId == lostServerId)
             {
-                throw new ApplicationException("Server can't loose connection with himself");
+                throw new ApplicationException("Server can't loose connection with itself");
             }
 
             // first get master id, as he can be deleted
