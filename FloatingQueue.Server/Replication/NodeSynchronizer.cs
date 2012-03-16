@@ -59,27 +59,31 @@ namespace FloatingQueue.Server.Replication
             {
                 var aggregateIds = AggregateRepository.Instance.GetAllIds();
                 var requester = Core.Server.Configuration.Nodes.Siblings.Single(n => n.ServerId == serverId);
+                var versionsSnapshot = AggregateRepository.Instance.GetLastVersions();
                 var writtenAggregatesVersions = new Dictionary<string, int>();
 
                 foreach (var aggregateId in aggregateIds)
                 {
-                    int uncyncedNodeLastVersion;
+                    int unsyncedNodeLastVersion, localNodeLastVersion, snapshotVersion;
                     IEventAggregate aggregate;
 
                     if (!AggregateRepository.Instance.TryGetEventAggregate(aggregateId, out aggregate))
                         throw new CriticalException("If there's an aggregate id, there must be an aggregate");
 
-                    if (!aggregateVersions.TryGetValue(aggregateId, out uncyncedNodeLastVersion))
-                        uncyncedNodeLastVersion = 0;
+                    if (!versionsSnapshot.TryGetValue(aggregateId, out snapshotVersion))
+                        throw new CriticalException("All aggregates, created after start of sync, must be handled by replication mechanism");
 
-                    int localNodeLastVersion = aggregate.LastVersion;
-                    if (uncyncedNodeLastVersion > localNodeLastVersion)
+                    if (!aggregateVersions.TryGetValue(aggregateId, out unsyncedNodeLastVersion))
+                        unsyncedNodeLastVersion = -1;
+
+                    localNodeLastVersion = aggregate.LastVersion;
+                    if (unsyncedNodeLastVersion > localNodeLastVersion)
                         throw new CriticalException("Fatal desynchronization issue came up - unsynced node last version is bigger than local(synced) node last version");
 
-                    var events = aggregate.GetAllNext(uncyncedNodeLastVersion);
+                    var events = aggregate.GetRange(unsyncedNodeLastVersion + 1, snapshotVersion - (unsyncedNodeLastVersion + 1));
 
-                    requester.Proxy.ReceiveAggregateEvents(aggregateId, uncyncedNodeLastVersion, localNodeLastVersion, events);
-                    writtenAggregatesVersions[aggregateId] = localNodeLastVersion;
+                    requester.Proxy.ReceiveAggregateEvents(aggregateId, unsyncedNodeLastVersion, events);
+                    writtenAggregatesVersions[aggregateId] = snapshotVersion;
                 }
 
                 requester.Proxy.NotificateAllAggregatesSent(writtenAggregatesVersions);
@@ -96,9 +100,9 @@ namespace FloatingQueue.Server.Replication
             foreach (KeyValuePair<string, int> kvp in currentVersions)
             {
                 int incomingValue;
-                if (!incomingVersions.TryGetValue(kvp.Key, out incomingValue)) 
+                if (!incomingVersions.TryGetValue(kvp.Key, out incomingValue))
                     throw new IncompatibleDataException("Missing aggregate in incomingAggregates");
-                if ( kvp.Value != incomingValue)
+                if (kvp.Value != incomingValue)
                     throw new IncompatibleDataException("Versions don't match");
             }
 
