@@ -25,6 +25,7 @@ namespace FloatingQueue.Server.Core
     {
         INodeCollection Nodes { get; }
         bool IsSyncing { get; set; }
+        int PingTimeout { get; }
     }
 
     public class ServerConfiguration : IServerConfiguration
@@ -36,6 +37,7 @@ namespace FloatingQueue.Server.Core
         public string InternalAddress { get { return Nodes.Self.InternalAddress; } }
         public string PublicAddress { get { return Nodes.Self.PublicAddress; } }
         public bool IsSyncing { get; set; }
+        public int PingTimeout { get { return 10000; }}
         public IInternalQueueServiceProxy Proxy { get; set; }
         public INodeCollection Nodes { get; set; }
     }

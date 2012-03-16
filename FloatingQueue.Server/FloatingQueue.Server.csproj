@@ -34,6 +34,38 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <OutputPath>bin\Debug\</OutputPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <OutputPath>bin\Release\</OutputPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'UNITTESTS|x86'">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>bin\x86\UNITTESTS\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DebugType>full</DebugType>
+    <PlatformTarget>x86</PlatformTarget>
+    <CodeAnalysisLogFile>bin\Debug\FloatingQueue.Server.exe.CodeAnalysisLog.xml</CodeAnalysisLogFile>
+    <CodeAnalysisUseTypeNameInSuppression>true</CodeAnalysisUseTypeNameInSuppression>
+    <CodeAnalysisModuleSuppressionsFile>GlobalSuppressions.cs</CodeAnalysisModuleSuppressionsFile>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRuleSetDirectories>;C:\Program Files (x86)\Microsoft Visual Studio 10.0\Team Tools\Static Analysis Tools\\Rule Sets</CodeAnalysisRuleSetDirectories>
+    <CodeAnalysisIgnoreBuiltInRuleSets>false</CodeAnalysisIgnoreBuiltInRuleSets>
+    <CodeAnalysisRuleDirectories>;C:\Program Files (x86)\Microsoft Visual Studio 10.0\Team Tools\Static Analysis Tools\FxCop\\Rules</CodeAnalysisRuleDirectories>
+    <CodeAnalysisIgnoreBuiltInRules>true</CodeAnalysisIgnoreBuiltInRules>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'UNITTESTS|AnyCPU'">
+    <OutputPath>bin\UNITTESTS\</OutputPath>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <CodeAnalysisIgnoreBuiltInRuleSets>true</CodeAnalysisIgnoreBuiltInRuleSets>
+    <CodeAnalysisIgnoreBuiltInRules>true</CodeAnalysisIgnoreBuiltInRules>
+    <CodeAnalysisFailOnMissingRules>false</CodeAnalysisFailOnMissingRules>
+    <DefineConstants>UNITTESTS</DefineConstants>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="Autofac">
       <HintPath>..\packages\Autofac.2.6.1.841\lib\NET40\Autofac.dll</HintPath>
@@ -68,6 +100,7 @@
     <Compile Include="Exceptions\BusinessLogicException.cs" />
     <Compile Include="Exceptions\CriticalException.cs" />
     <Compile Include="Exceptions\IncompatibleDataException.cs" />
+    <Compile Include="Exceptions\ServerInitializationException.cs" />
     <Compile Include="Replication\ConnectionManager.cs" />
     <Compile Include="Replication\NodeCollection.cs" />
     <Compile Include="Services\Proxy\ProxyHelper.cs" />
@@ -89,9 +122,14 @@
     <Compile Include="Services\Proxy\IInternalQueueServiceProxy.cs" />
     <Compile Include="Services\Proxy\InternalQueueServiceProxy.cs" />
     <Compile Include="Tests\AggreagateRepositoryTests.cs" />
+    <Compile Include="Tests\ComponentsManagerTests.cs" />
     <Compile Include="Tests\ConfigurationTests.cs" />
+    <Compile Include="Tests\ConnectionManagerTests.cs" />
     <Compile Include="Tests\EventAggregateTests.cs" />
     <Compile Include="Tests\MasterElectionsTests.cs" />
+    <Compile Include="Tests\NodeCollectionTests.cs" />
+    <Compile Include="Tests\QueueServicesTestsBase.cs" />
+    <Compile Include="Tests\ServerTests.cs" />
     <Compile Include="Tests\TestBase.cs" />
     <Compile Include="Tests\TestLogger.cs" />
   </ItemGroup>

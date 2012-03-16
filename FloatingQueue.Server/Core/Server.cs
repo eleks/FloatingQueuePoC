@@ -1,5 +1,7 @@
-﻿using System.Threading;
+﻿using System;
+using System.Threading;
 using Autofac;
+using FloatingQueue.Server.Exceptions;
 
 namespace FloatingQueue.Server.Core
 {
@@ -11,8 +13,24 @@ namespace FloatingQueue.Server.Core
 
         public static void Init(IContainer container)
         {
+            if(Initialized)
+            {
+                #if !UNITTESTS
+
+                throw new ServerInitializationException("Server is already initialized");
+
+                #endif
+            }
+            if(container == null)
+            {
+                throw new ArgumentNullException("container");
+            }
+
             ServicesContainer = container;
+            Initialized = true;
         }
+
+        public static bool Initialized { get; private set; }
 
         public static ILogger Log
         {

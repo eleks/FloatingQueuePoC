@@ -22,8 +22,6 @@ namespace FloatingQueue.Server.Replication
         private readonly object m_InitializationLock = new object();
         private readonly object m_MonitoringLock = new object();
 
-        public const int MonitorWaitTime = 10000;
-
         public event ConnectionLostHandler OnConnectionLoss;
 
         public void OpenOutcomingConnections()
@@ -123,7 +121,7 @@ namespace FloatingQueue.Server.Replication
                             FireConnectionLoss(node.ServerId);
                         }
                     }
-                    Thread.Sleep(MonitorWaitTime);
+                    Thread.Sleep(Core.Server.Configuration.PingTimeout);
                     lock (m_MonitoringLock)
                     {
                         stop = !m_MonitoringEnabled;

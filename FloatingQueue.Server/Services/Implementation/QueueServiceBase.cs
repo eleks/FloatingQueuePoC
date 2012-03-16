@@ -8,7 +8,7 @@ using FloatingQueue.Server.Replication;
 
 namespace FloatingQueue.Server.Services.Implementation
 {
-    public class QueueServiceBase : IQueueService
+    public abstract class QueueServiceBase : IQueueService
     {
         public virtual void Push(string aggregateId, int version, object e)
         {
