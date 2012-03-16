@@ -25,6 +25,7 @@ namespace FloatingQueue.Server.Core
         INodeCollection Nodes { get; }
         string PublicAddress { get; }
         bool IsSyncing { get; set; }
+        int PingTimeout { get; }
     }
 
     public class ServerConfiguration : IServerConfiguration
@@ -36,6 +37,12 @@ namespace FloatingQueue.Server.Core
         public string Address { get { return Nodes.Self.Address; } }
         public string PublicAddress { get; set; }
         public bool IsSyncing{get; set; }
+
+        public int PingTimeout
+        {
+            get { return 10000; }
+        }
+
         public IInternalQueueServiceProxy Proxy { get; set; }
         public INodeCollection Nodes { get; set; }
     }
@@ -51,18 +58,18 @@ namespace FloatingQueue.Server.Core
         public void DeclareAsNewMaster()
         {
             if (!IsSynced)
-                throw new InvalidOperationException("A node who's in synchronization state cannot declare herslef as New Master");
+                throw new InvalidOperationException("A node who's in synchronization state cannot declare itself as New Master");
             if (IsMaster)
-                throw new InvalidOperationException("A node who's already a Master cannot declare himself as New Master");
+                throw new InvalidOperationException("A node who's already a Master cannot declare itself as New Master");
             IsMaster = true;
         }
 
         public void DeclareAsSyncedNode()
         {
             if (IsSynced)
-                throw new InvalidOperationException("Already synced node cannot declare herslef as Synced");
+                throw new InvalidOperationException("Already synced node cannot declare itself as Synced");
             if (IsMaster)
-                throw new InvalidOperationException("Master node cannot declare herslef as Synced");
+                throw new InvalidOperationException("Master node cannot declare itself as Synced");
             IsSynced = true;
         }
     }

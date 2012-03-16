@@ -8,11 +8,11 @@ namespace FloatingQueue.Server.EventsLogic
     public interface IEventAggregate
     {
         void Push(int version, object e);
-        void PushMany(int version, int expectedLastVersion, IEnumerable<object> events);
+        void PushMany(int version, IEnumerable<object> events);
         bool TryGetNext(int version, out object next);
         IEnumerable<object> GetAllNext(int version);
+        IEnumerable<object> GetRange(int version, int count);
         int LastVersion { get; }
-        int ExpectedLastVersion { get; }
         void Commit();
         void Rollback();
     }
@@ -22,7 +22,6 @@ namespace FloatingQueue.Server.EventsLogic
         private readonly List<object> m_InternalStorage = new List<object>();
         private readonly object m_SyncRoot = new object();
         private bool m_HasUncommitedChanges;
-        private int m_ExpectedLastVersion;
 
         public void Push(int version, object e)
         {
@@ -37,8 +36,7 @@ namespace FloatingQueue.Server.EventsLogic
             }
         }
 
-        // todo: refactor -> remove expectedLastVersion arg
-        public void PushMany(int version, int expectedLastVersion, IEnumerable<object> events)
+        public void PushMany(int version, IEnumerable<object> events)
         {
             lock (m_SyncRoot)
             {
@@ -48,7 +46,6 @@ namespace FloatingQueue.Server.EventsLogic
                 }
                 m_InternalStorage.AddRange(events);
                 m_HasUncommitedChanges = true;
-                m_ExpectedLastVersion = expectedLastVersion;
             }
         }
 
@@ -69,11 +66,21 @@ namespace FloatingQueue.Server.EventsLogic
             }
         }
 
+        //note MM: TryGetNext, GetAllNext, GetRange would break up, if there's no seek on storage
+
         public IEnumerable<object> GetAllNext(int version)
         {
             lock (m_SyncRoot)
             {
                 return m_InternalStorage.Skip(version + 1).ToList();
+            }
+        }
+
+        public IEnumerable<object> GetRange(int version, int count)
+        {
+            lock (m_SyncRoot)
+            {
+                return m_InternalStorage.GetRange(version, count);
             }
         }
 
@@ -84,17 +91,6 @@ namespace FloatingQueue.Server.EventsLogic
                 lock (m_SyncRoot)
                 {
                     return m_InternalStorage.Count;
-                }
-            }
-        }
-
-        public int ExpectedLastVersion
-        {
-            get
-            {
-                lock (m_SyncRoot)
-                {
-                    return m_ExpectedLastVersion;
                 }
             }
         }

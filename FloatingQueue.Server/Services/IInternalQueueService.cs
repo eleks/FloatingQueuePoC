@@ -13,11 +13,11 @@ namespace FloatingQueue.Server.Services
         [OperationContract]
         void IntroduceNewNode(NodeInfo nodeInfo);
         [OperationContract]
-        void RequestSynchronization(int serverId, IDictionary<string, int> aggregateVersions);
+        void RequestSynchronization(int serverId, IDictionary<string, int> currentAggregateVersions);
         [OperationContract]
         void NotificateNodeIsSynchronized(int serverId);
         [OperationContract]
-        void ReceiveAggregateEvents(string aggregateId, int version, int expectedLastVersion, IEnumerable<object> events);
+        void ReceiveAggregateEvents(string aggregateId, int version, IEnumerable<object> events);
         [OperationContract]
         void NotificateAllAggregatesSent(IDictionary<string, int> writtenAggregatesVersions);
     }

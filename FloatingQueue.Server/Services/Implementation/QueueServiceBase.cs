@@ -19,7 +19,7 @@ namespace FloatingQueue.Server.Services.Implementation
             {
                 if (!HandleSynchronizationPush(aggregate, version, e))
                     return;
-                
+
                 aggregate.Push(version, e);
                 if (Core.Server.Configuration.IsMaster)
                 {
@@ -75,14 +75,8 @@ namespace FloatingQueue.Server.Services.Implementation
         {
             if (!Core.Server.Configuration.IsSyncing)
                 return true;
-            if (version > aggregate.ExpectedLastVersion)
-            {
-                throw new NotImplementedException("Here a write to temporary storage is required");
-            }
-            else
-            {// dont write at all - this push will be handled by synchronization mechanism
-            }
-            return false;
+            
+            throw new NotImplementedException("Here a write to temporary storage is required");
         }
 
     }

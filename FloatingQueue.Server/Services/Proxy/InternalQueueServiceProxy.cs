@@ -81,12 +81,12 @@ namespace FloatingQueue.Server.Services.Proxy
             Client.NotificateNodeIsSynchronized(serverId);
         }
 
-        public void ReceiveAggregateEvents(string aggregateId, int version, int expectedLastVersion, IEnumerable<object> events)
+        public void ReceiveAggregateEvents(string aggregateId, int version, IEnumerable<object> events)
         {
             if (!Core.Server.Configuration.IsSynced)
                 throw new BusinessLogicException("Only Synced Node can push all aggregate events");
 
-            Client.ReceiveAggregateEvents(aggregateId, version, expectedLastVersion, events);
+            Client.ReceiveAggregateEvents(aggregateId, version, events);
         }
 
         public void NotificateAllAggregatesSent(IDictionary<string, int> writtenAggregatesVersions)
