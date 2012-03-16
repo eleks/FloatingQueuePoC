@@ -56,9 +56,22 @@ namespace FloatingQueue.Server.Tests
         }
 
         [Test]
-        public void PushManyFailTest()
+        public void PushManyTest()
         {
-            Assert.Fail("Refactor PushMany -> remove expectedLastVersion arg");
+            var aggregate = new EventAggregate();
+            var events = new[] {"a", "b", "c"};
+            aggregate.PushMany(-1, events);
+            CollectionAssert.AreEqual(events, aggregate.GetRange(0, 3));
+        }
+
+        [Test, ExpectedException(typeof(OptimisticLockException))]
+        public void PushMany_OptimisticLock_Test()
+        {
+            var aggregate = new EventAggregate();
+            var events = new[] { "a", "b", "c" };
+            aggregate.PushMany(-1, events);
+            CollectionAssert.AreEqual(events, aggregate.GetRange(0, 3));
+            aggregate.PushMany(0, events);
         }
 
         [Test]
