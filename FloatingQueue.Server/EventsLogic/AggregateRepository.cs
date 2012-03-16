@@ -9,15 +9,14 @@ namespace FloatingQueue.Server.EventsLogic
         bool TryGetEventAggregate(string aggregateId, out IEventAggregate aggregate);
         IEventAggregate CreateAggregate(string aggreagateId);
         List<string> GetAllIds();
+        IDictionary<string, int> GetLastVersions();
     }
 
     public class AggregateRepository : IAggregateRepository
     {
-        private static readonly AggregateRepository ms_Instance = new AggregateRepository(); // todo: replace singleton with IoC
-
-        public static AggregateRepository Instance
+        public static IAggregateRepository Instance
         {
-            get { return ms_Instance; }
+            get { return Core.Server.Resolve<IAggregateRepository>(); } // todo: it makes sense to cache it in static variable due to performance reasons
         }
 
         private readonly Dictionary<string, IEventAggregate> m_InternalStorage = new Dictionary<string, IEventAggregate>();
@@ -58,12 +57,39 @@ namespace FloatingQueue.Server.EventsLogic
             }
         }
 
+        //public IDictionary<string, IEventAggregate> GetAllAggregates()
+        //{
+        //    try
+        //    {
+        //        m_Lock.EnterReadLock();
+        //        return new Dictionary<string, IEventAggregate>(m_InternalStorage);
+        //    }
+        //    finally
+        //    {
+        //        m_Lock.ExitReadLock();
+        //    }
+        //}
+
         public List<string> GetAllIds()
         {
             try
             {
                 m_Lock.EnterReadLock();
                 return m_InternalStorage.Keys.ToList();
+            }
+            finally
+            {
+                m_Lock.ExitReadLock();
+            }
+        }
+
+        // todo: refactor this method to GetAllAggregates + (extension method)GetLastVersions
+        public IDictionary<string, int> GetLastVersions()
+        {
+            try
+            {
+                m_Lock.EnterReadLock();
+                return m_InternalStorage.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.LastVersion);
             }
             finally
             {

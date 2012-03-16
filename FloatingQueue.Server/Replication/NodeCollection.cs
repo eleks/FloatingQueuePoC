@@ -91,6 +91,16 @@ namespace FloatingQueue.Server.Replication
             }
         }
 
+        public void AddNewNode(INodeConfiguration slave)
+        {
+            RemoveDeadNodes();
+            lock (m_SyncRoot)
+            {
+                m_Nodes.Add(slave);
+                m_DeadNodes.Add(false);
+            }
+        }
+
         // note MM: if server is closed in small interval after another server has died and before it's been noticed(by ping or by method call), then wcf would fire exceptions. But at the moment they are handled by Proxy class. This may be subject to fix.
         public void RemoveDeadNode(int nodeId)
         {
@@ -102,15 +112,6 @@ namespace FloatingQueue.Server.Replication
                 m_DeadNodes[index] = true;
             }
             //m_Proxies.RemoveAll(node => node.ServerId == nodeId);
-        }
-
-        public void AddNewNode(INodeConfiguration slave)
-        {
-            lock(m_SyncRoot)
-            {
-                m_Nodes.Add(slave);
-                m_DeadNodes.Add(false);
-            }
         }
 
         public void RemoveDeadNodes()

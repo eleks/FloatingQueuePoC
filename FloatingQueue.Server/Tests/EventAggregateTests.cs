@@ -54,5 +54,70 @@ namespace FloatingQueue.Server.Tests
             var result = aggregate.GetAllNext(startingFrom);
             Assert.AreEqual(count - startingFrom - 1, result.Count());
         }
+
+        [Test]
+        public void PushManyTest()
+        {
+            var aggregate = new EventAggregate();
+            var events = new[] {"a", "b", "c"};
+            aggregate.PushMany(-1, events);
+            CollectionAssert.AreEqual(events, aggregate.GetRange(0, 3));
+        }
+
+
+        [Test, Combinatorial]
+        public void GetRangeTest([Values(0, 1)]int version, [Values(0, 1)]int count)
+        {
+            var aggregate = new EventAggregate();
+            var events = new[] { "a", "b", "c" };
+            aggregate.PushMany(-1, events);
+            CollectionAssert.AreEqual(events.ToList().GetRange(version, count), aggregate.GetRange(version, count));
+        }
+
+        [Test, ExpectedException(typeof(OptimisticLockException))]
+        public void PushMany_OptimisticLock_Test()
+        {
+            var aggregate = new EventAggregate();
+            var events = new[] { "a", "b", "c" };
+            aggregate.PushMany(-1, events);
+            CollectionAssert.AreEqual(events, aggregate.GetRange(0, 3));
+            aggregate.PushMany(0, events);
+        }
+
+        [Test]
+        public void CommitTest()
+        {
+            var tranCounter = Core.Server.TransactionCounter;
+            var aggregate = new EventAggregate();
+            Assert.AreEqual(0, aggregate.LastVersion);
+            Assert.IsFalse(aggregate.HasUncommitedChanges);
+            aggregate.Push(-1, new object());
+            Assert.IsTrue(aggregate.HasUncommitedChanges);
+            Assert.AreEqual(1, aggregate.LastVersion);
+
+            aggregate.Commit();
+
+            Assert.IsFalse(aggregate.HasUncommitedChanges);
+            Assert.AreEqual(tranCounter + 1, Core.Server.TransactionCounter);
+            Assert.AreEqual(1, aggregate.LastVersion);
+        }
+
+        [Test]
+        public void RollbackTest()
+        {
+            var tranCounter = Core.Server.TransactionCounter;
+            var aggregate = new EventAggregate();
+            Assert.AreEqual(0, aggregate.LastVersion);
+            Assert.IsFalse(aggregate.HasUncommitedChanges);
+            aggregate.Push(-1, new object());
+            Assert.IsTrue(aggregate.HasUncommitedChanges);
+            Assert.AreEqual(1, aggregate.LastVersion);
+
+            aggregate.Rollback();
+
+            Assert.IsFalse(aggregate.HasUncommitedChanges);
+            Assert.AreEqual(tranCounter, Core.Server.TransactionCounter);
+            Assert.AreEqual(0, aggregate.LastVersion);
+        }
     }
 }

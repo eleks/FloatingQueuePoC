@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.ServiceModel;
 using FloatingQueue.Common.Proxy;
+using FloatingQueue.Server.Exceptions;
 
 namespace FloatingQueue.Server.Services.Proxy
 {
@@ -54,18 +55,48 @@ namespace FloatingQueue.Server.Services.Proxy
 
         public void IntroduceNewNode(NodeInfo nodeInfo)
         {
-            throw new NotImplementedException();
+            if (Core.Server.Configuration.IsSynced)
+                throw new BusinessLogicException("Only Unsynced Node can introduce herself to others as a new node");
+
+            Client.IntroduceNewNode(nodeInfo);
         }
 
-        public void RequestSynchronization(NodeInfo nodeInfo)
+        public void RequestSynchronization(int serverId, IDictionary<string, int> aggregateVersions)
         {
-            throw new NotImplementedException();
+            if (Core.Server.Configuration.IsSynced)
+                throw new BusinessLogicException("Request for synchronization can be initiated only by Unsynced Node");
+
+            Core.Server.Configuration.IsSyncing = true;
+            Client.RequestSynchronization(serverId, aggregateVersions);
         }
 
-        public void NotificateSlaveSynchronized(NodeInfo nodeInfo)
+        public void NotificateNodeIsSynchronized(int serverId)
         {
-            throw new NotImplementedException();
+            if (Core.Server.Configuration.IsSyncing)
+                throw new BusinessLogicException("If node is still syncing she can't notify otehr nodes that she's already synced");
+
+            if (Core.Server.Configuration.IsSynced)
+                throw new BusinessLogicException("Only Unsynced Node can notificate siblings that she's synchronized");
+
+            Client.NotificateNodeIsSynchronized(serverId);
         }
+
+        public void ReceiveAggregateEvents(string aggregateId, int version, IEnumerable<object> events)
+        {
+            if (!Core.Server.Configuration.IsSynced)
+                throw new BusinessLogicException("Only Synced Node can push all aggregate events");
+
+            Client.ReceiveAggregateEvents(aggregateId, version, events);
+        }
+
+        public void NotificateAllAggregatesSent(IDictionary<string, int> writtenAggregatesVersions)
+        {
+            if (!Core.Server.Configuration.IsSynced)
+                throw new BusinessLogicException("Only Synced Node can notificate about aggregates sending completeness");
+
+            Client.NotificateAllAggregatesSent(writtenAggregatesVersions);
+        }
+
 
         #endregion
 

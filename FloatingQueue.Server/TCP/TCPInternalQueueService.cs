@@ -56,30 +56,37 @@ namespace FloatingQueue.Server.TCP
         //void IntroduceNewNode(NodeInfo nodeInfo);
         protected bool IntroduceNewNode(IInternalQueueService service, TCPBinaryReader request, TCPBinaryWriter response)
         {
-            var nodeInfo = ReadNodeInfo(request);
-            service.IntroduceNewNode(nodeInfo);
+            throw new NotImplementedException();
+            //var nodeInfo = ReadNodeInfo(request);
+            //service.IntroduceNewNode(nodeInfo);
             //
             return true;
         }
 
-        //void RequestSynchronization(NodeInfo nodeInfo);
+        //RequestSynchronization(int serverId, IDictionary<string, int> currentAggregateVersions)
         protected bool RequestSynchronization(IInternalQueueService service, TCPBinaryReader request, TCPBinaryWriter response)
         {
-            var nodeInfo = ReadNodeInfo(request);
-            service.RequestSynchronization(nodeInfo);
+            throw new NotImplementedException();
+            
+            //var nodeInfo = ReadNodeInfo(request);
+            //service.RequestSynchronization(nodeInfo);
             //
             return true;
         }
 
 
-        //void NotificateSlaveSynchronized(NodeInfo nodeInfo);
+        //void NotificateNodeIsSynchronized(int serverId)
         protected bool NotificateSlaveSynchronized(IInternalQueueService service, TCPBinaryReader request, TCPBinaryWriter response)
         {
+            throw new NotImplementedException();
             var nodeInfo = ReadNodeInfo(request);
-            service.NotificateSlaveSynchronized(nodeInfo);
+            //service.NotificateSlaveSynchronized(nodeInfo);
             //
             return true;
         }
+
+
+        //void ReceiveAggregateEvents(string aggregateId, int version, IEnumerable<object> events) 
 
     }
 }
