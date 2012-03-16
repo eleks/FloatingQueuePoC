@@ -54,5 +54,47 @@ namespace FloatingQueue.Server.Tests
             var result = aggregate.GetAllNext(startingFrom);
             Assert.AreEqual(count - startingFrom - 1, result.Count());
         }
+
+        [Test]
+        public void PushManyFailTest()
+        {
+            Assert.Fail("Refactor PushMany -> remove expectedLastVersion arg");
+        }
+
+        [Test]
+        public void CommitTest()
+        {
+            var tranCounter = Core.Server.TransactionCounter;
+            var aggregate = new EventAggregate();
+            Assert.AreEqual(0, aggregate.LastVersion);
+            Assert.IsFalse(aggregate.HasUncommitedChanges);
+            aggregate.Push(-1, new object());
+            Assert.IsTrue(aggregate.HasUncommitedChanges);
+            Assert.AreEqual(1, aggregate.LastVersion);
+
+            aggregate.Commit();
+
+            Assert.IsFalse(aggregate.HasUncommitedChanges);
+            Assert.AreEqual(tranCounter + 1, Core.Server.TransactionCounter);
+            Assert.AreEqual(1, aggregate.LastVersion);
+        }
+
+        [Test]
+        public void RollbackTest()
+        {
+            var tranCounter = Core.Server.TransactionCounter;
+            var aggregate = new EventAggregate();
+            Assert.AreEqual(0, aggregate.LastVersion);
+            Assert.IsFalse(aggregate.HasUncommitedChanges);
+            aggregate.Push(-1, new object());
+            Assert.IsTrue(aggregate.HasUncommitedChanges);
+            Assert.AreEqual(1, aggregate.LastVersion);
+
+            aggregate.Rollback();
+
+            Assert.IsFalse(aggregate.HasUncommitedChanges);
+            Assert.AreEqual(tranCounter, Core.Server.TransactionCounter);
+            Assert.AreEqual(0, aggregate.LastVersion);
+        }
     }
 }

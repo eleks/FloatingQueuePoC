@@ -71,7 +71,7 @@ namespace FloatingQueue.Server.Tests
         [Test]
         public void GetLastVersionsTest()
         {
-            Assert.Fail("Review method");
+            Assert.Fail("Refactor method");
         }
     }
 }

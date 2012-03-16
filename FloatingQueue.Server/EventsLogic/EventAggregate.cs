@@ -37,6 +37,7 @@ namespace FloatingQueue.Server.EventsLogic
             }
         }
 
+        // todo: refactor -> remove expectedLastVersion arg
         public void PushMany(int version, int expectedLastVersion, IEnumerable<object> events)
         {
             lock (m_SyncRoot)
@@ -98,17 +99,28 @@ namespace FloatingQueue.Server.EventsLogic
             }
         }
 
+        public bool HasUncommitedChanges
+        {
+            get { return m_HasUncommitedChanges; }
+        }
+
         public void Commit()
         {
             // todo: flush the data into file system here
-            m_HasUncommitedChanges = false;
-            Core.Server.FireTransactionCommited(); // todo: use pub/sub here
+            if (m_HasUncommitedChanges)
+            {
+                m_HasUncommitedChanges = false;
+                Core.Server.FireTransactionCommited(); // todo: use pub/sub here
+            }
         }
 
         public void Rollback()
         {
-            m_InternalStorage.RemoveAt(m_InternalStorage.Count - 1);
-            m_HasUncommitedChanges = false;
+            if (m_HasUncommitedChanges)
+            {
+                m_InternalStorage.RemoveAt(m_InternalStorage.Count - 1);
+                m_HasUncommitedChanges = false;
+            }
         }
     }
 }
