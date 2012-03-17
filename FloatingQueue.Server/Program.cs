@@ -25,19 +25,30 @@ namespace FloatingQueue.Server
                 ShowUsage();
                 return;
             }
-            // WCF
-            //var provider = new WCFCommunicationProvider();
 
-            // TCP
-            var provider = new TCPCommunicationProvider();
-            provider.RegisterHostImplementation<PublicQueueService>(() => new TCPPublicQueueService());
-            provider.RegisterHostImplementation<InternalQueueService>(() => new TCPInternalQueueService());
-            provider.RegisterChannelImplementation<IInternalQueueService>(() => new TCPInternalQueueServiceProxy());
-
-            CommunicationProvider.Init(provider);
+            InitializeCommunicationProvider(useTCP : false);
 
             Initialize(args);
             RunHosts();
+        }
+
+        private static void InitializeCommunicationProvider(bool useTCP)
+        {
+            if (useTCP)
+            {
+                // TCP
+                var provider = new TCPCommunicationProvider();
+                provider.RegisterHostImplementation<PublicQueueService>(() => new TCPPublicQueueService());
+                provider.RegisterHostImplementation<InternalQueueService>(() => new TCPInternalQueueService());
+                provider.RegisterChannelImplementation<IInternalQueueService>(() => new TCPInternalQueueServiceProxy());
+                CommunicationProvider.Init(provider);
+            }
+            else
+            {
+                // WCF
+                var provider = new WCFCommunicationProvider();
+                CommunicationProvider.Init(provider);
+            }
         }
 
         private static void Initialize(string[] args)

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.ServiceModel;
 using FloatingQueue.Common.Proxy;
 using FloatingQueue.Server.Exceptions;
@@ -50,6 +51,10 @@ namespace FloatingQueue.Server.Services.Proxy
                 return Client.Ping();
             }
             catch (CommunicationException)
+            {
+                return 1;
+            }
+            catch (IOException)
             {
                 return 1;
             }

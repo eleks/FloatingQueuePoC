@@ -17,23 +17,9 @@ namespace FloatingQueue.TestClient
         private static SafeQueueServiceProxy ms_Proxy;
         private static List<Node> ms_Nodes;
 
-        private static QueueServiceProxyBase CreateProxy()
-        {
-            //return new SafeQueueServiceProxy(MasterAddress);
-            return new QueueServiceProxyBase(MasterAddress);
-        }
-
         static void Main(string[] args)
         {
-            // WCF
-            //var provider = new WCFCommunicationProvider();
-
-            // TCP
-            var provider = new TCPCommunicationProvider();
-            provider.RegisterChannelImplementation<IQueueService>( () => new TCPQueueServiceProxy() );
-
-            CommunicationProvider.Init(provider);
-
+            InitializeCommunicationProvider(useTCP: false);
             //
             Console.Out.WriteLine("Test Client");
             ms_Proxy = CreateProxy(MasterAddress);
@@ -162,6 +148,23 @@ namespace FloatingQueue.TestClient
             var proxy = new SafeQueueServiceProxy(address);
             proxy.OnClientCallFailed += HandleClientCallFailed;
             return proxy;
+        }
+
+        private static void InitializeCommunicationProvider(bool useTCP)
+        {
+            if (useTCP)
+            {
+                // TCP
+                var provider = new TCPCommunicationProvider();
+                provider.RegisterChannelImplementation<IQueueService>(() => new TCPQueueServiceProxy());
+                CommunicationProvider.Init(provider);
+            }
+            else
+            {
+                // WCF
+                var provider = new WCFCommunicationProvider();
+                CommunicationProvider.Init(provider);
+            }
         }
 
         static void ShowUsage()
