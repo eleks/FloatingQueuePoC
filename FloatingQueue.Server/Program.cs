@@ -51,58 +51,69 @@ namespace FloatingQueue.Server
             Core.Server.Log.Info("Nodes:");
             foreach (var node in configuration.Nodes.SyncedSiblings)
             {
-                Core.Server.Log.Info("\t{0}", node.Address);
+                Core.Server.Log.Info("\t{0}", node.InternalAddress);
             }
         }
 
         private static ServerConfiguration ParseConfiguration(string[] args)
         {
-            const string addressMask = "net.tcp://localhost:{0}";
+            const string addressMask = "{0}:{1}";
+            const string localAddress = "net.tcp://localhost";
 
             var configuration = new ServerConfiguration { ServerId = 0 };
             var nodes = new List<INodeConfiguration>();
             int publicPort = 80, internalPort = 81;
-            bool isMaster = false, isSynced = true;
+            bool isMaster = false, isSynced = false;
 
+            //TODO MM: cleanup this messy arguments.
             var p = new OptionSet()
                     {
                         {"pp|pubport=", v => int.TryParse(v, out publicPort)},
                         {"ip|intport=", v => int.TryParse(v, out internalPort)},
                         {"m|master", v => isMaster = !string.IsNullOrEmpty(v) },
-                        {"s|sync", v => isSynced = string.IsNullOrEmpty(v) },
+                        {"s|sync", v => isSynced = !string.IsNullOrEmpty(v) },
                         {"id=",v => configuration.ServerId = byte.Parse(v) },
                         {"n|nodes=", v => nodes.AddRange(v.Split(';').Select(
                                           node => 
                                           { 
                                               var info = node.Split('$');
+                                              var address = info[0];
+                                              int pubPort = int.Parse(info[1]), 
+                                                  intPort= int.Parse(info[2]);
+                                              var pubAddress = string.Format(addressMask, address, pubPort);
+                                              var intAddress = string.Format(addressMask, address, intPort);
+                                              byte id = byte.Parse(info[3]);
+                                              bool master = info.Length == 5 && info[4].ToLower() == "master";
+                                              
                                               return new NodeConfiguration
                                               {
-                                                  Address = info[0],
-                                                  Proxy = new InternalQueueServiceProxy(info[0]),
-                                                  IsMaster = info.Length == 3 && info[2].ToLower() == "master",
+                                                  InternalAddress = intAddress,
+                                                  PublicAddress = pubAddress,
+                                                  Proxy = new InternalQueueServiceProxy(intAddress),
+                                                  IsMaster = master,
                                                   IsSynced = true,
                                                   IsReadonly = false,
-                                                  ServerId = byte.Parse(info[1])
+                                                  ServerId = id
                                               };
-                                          }).OfType<INodeConfiguration>())}
+                                          }))}
                     };
             p.Parse(args);
 
             // liaise nodes collection and current node
             nodes.Add(new NodeConfiguration()
                   {
-                      Address = string.Format(addressMask, internalPort),
+                      InternalAddress = string.Format(addressMask, localAddress, internalPort),
+                      PublicAddress = string.Format(addressMask, localAddress, publicPort),
                       Proxy = null, // we don't want a circular reference
                       IsMaster = isMaster,
                       IsSynced = isSynced,
                       IsReadonly = false,
-                      ServerId = configuration.ServerId
+                      ServerId = configuration.ServerId,
                   });
             var allNodes = new NodeCollection(nodes);
 
             EnsureNodesConfigurationIsValid(allNodes);
 
-            configuration.PublicAddress = string.Format(addressMask, publicPort);
             configuration.Nodes = allNodes;
 
             return configuration;
@@ -123,7 +134,7 @@ namespace FloatingQueue.Server
         private static void RunHosts()
         {
             var publicHost = CreateHost<PublicQueueService>(Core.Server.Configuration.PublicAddress);
-            var internalHost = CreateHost<InternalQueueService>(Core.Server.Configuration.Address);
+            var internalHost = CreateHost<InternalQueueService>(Core.Server.Configuration.InternalAddress);
             
             internalHost.Open();
             publicHost.Open();

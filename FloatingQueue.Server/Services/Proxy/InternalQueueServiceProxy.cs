@@ -32,6 +32,12 @@ namespace FloatingQueue.Server.Services.Proxy
             return Client.GetAllNext(aggregateId, version);
         }
 
+        public ClusterMetadata GetClusterMetadata()
+        {
+            return Client.GetClusterMetadata();
+        }
+
+
         #endregion
 
         #region Additional Functionality

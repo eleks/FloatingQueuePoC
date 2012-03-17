@@ -24,6 +24,8 @@ namespace FloatingQueue.Server.TCP
                 return TryGetNext(service, request, response);
             if (request.Command == "GetAllNext".GetHashCode())
                 return GetAllNext(service, request, response);
+            if (request.Command == "GetClusterMetadata".GetHashCode())
+                return GetClusterMetadata(service, request, response);
             return false;
         }
 
@@ -62,5 +64,19 @@ namespace FloatingQueue.Server.TCP
             }
             return true;
         }
+
+        protected bool GetClusterMetadata(IQueueService service, TCPBinaryReader request, TCPBinaryWriter response)
+        {
+            var result = service.GetClusterMetadata();
+            //
+            response.Write(result.Nodes.Count);
+            for (int i = 0; i < result.Nodes.Count; i++)
+            {
+                response.Write(result.Nodes[i].Address);
+                response.Write(result.Nodes[i].IsMaster);
+            }
+            return true;
+        }
+
     }
 }

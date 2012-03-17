@@ -55,6 +55,7 @@ namespace FloatingQueue.Server.Replication
             ValidateSyncRequest(serverId);
 
             //todo: pushing each aggregate in separate thread would enhance performance
+            //todo: ensure single background task
             Task.Factory.StartNew(() =>
             {
                 var aggregateIds = AggregateRepository.Instance.GetAllIds();

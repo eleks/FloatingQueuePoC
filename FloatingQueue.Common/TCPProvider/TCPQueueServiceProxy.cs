@@ -43,5 +43,21 @@ namespace FloatingQueue.Common.TCPProvider
             }
             return res;
         }
+
+        public ClusterMetadata GetClusterMetadata()
+        {
+            var req = CreateRequest("GetClusterMetadata");
+            var resp = SendReceive(req);
+            var sz = resp.ReadInt32();
+            var list = new List<Node>(sz);
+            for (int i = 0; i < sz; i++)
+            {
+                var node = new Node();
+                node.Address = resp.ReadString();
+                node.IsMaster = resp.ReadBoolean();
+                list.Add(node);
+            }
+            return new ClusterMetadata(list);
+        }
     }
 }

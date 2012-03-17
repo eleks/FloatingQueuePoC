@@ -24,5 +24,10 @@ namespace FloatingQueue.Common.Proxy.QueueServiceProxy
         {
             return Client.GetAllNext(aggregateId, version);
         }
+
+        public virtual ClusterMetadata GetClusterMetadata()
+        {
+            return Client.GetClusterMetadata();
+        }
     }
 }

@@ -13,7 +13,9 @@ namespace FloatingQueue.TestClient
     class Program
     {
         private static readonly Random ms_Rand = new Random();
-        private const string MasterAddress = "net.tcp://localhost:10080"; //todo MM: write logic to switch master's address when he's dead
+        private static string MasterAddress = "net.tcp://localhost:10080";
+        private static SafeQueueServiceProxy ms_Proxy;
+        private static List<Node> ms_Nodes;
 
         private static QueueServiceProxyBase CreateProxy()
         {
@@ -34,7 +36,18 @@ namespace FloatingQueue.TestClient
 
             //
             Console.Out.WriteLine("Test Client");
-            var proxy = CreateProxy();
+            ms_Proxy = CreateProxy(MasterAddress);
+
+            var metadata = ms_Proxy.GetClusterMetadata();
+            if (metadata == null)
+            {
+                Console.WriteLine("Cannot establish connection with server at {0}", MasterAddress);
+                Console.ReadLine();
+                return;
+            }
+
+            ms_Nodes = metadata.Nodes;
+
             bool work = true;
             while (work)
             {
@@ -47,7 +60,7 @@ namespace FloatingQueue.TestClient
                     switch (cmd.ToLower())
                     {
                         case "push":
-                            DoPush(proxy, atoms.Skip(1).ToArray());
+                            DoPush(ms_Proxy, atoms.Skip(1).ToArray());
                             Console.WriteLine("Done. Completed in {0} ms", (DateTime.Now - start).TotalMilliseconds);
                             break;
                         case "flood":
@@ -79,12 +92,10 @@ namespace FloatingQueue.TestClient
 
         private static void DoFlood(int requests)
         {
-            using (var proxy = CreateProxy())
+            using (var proxy = CreateProxy(MasterAddress))
+            for (int i = 0; i < requests; i++)
             {
-                for (int i = 0; i < requests; i++)
-                {
-                    proxy.Push(ms_Rand.Next().ToString(), -1, ms_Rand.Next().ToString());
-                }
+                proxy.Push(ms_Rand.Next().ToString(), -1, ms_Rand.Next().ToString());
             }
         }
 
@@ -99,6 +110,58 @@ namespace FloatingQueue.TestClient
                 Console.WriteLine(ex);
                 ShowUsage();
             }
+        }
+
+        private static void HandleClientCallFailed()
+        {
+            Console.WriteLine("Connection lost with {0}. Trying to establish new connection...", MasterAddress);
+
+            bool success = false;
+            List<Node> newNodes = null;
+
+            foreach (var node in ms_Nodes)
+            {
+                var proxy = new SafeQueueServiceProxy(node.Address);
+
+                var metadata = proxy.GetClusterMetadata();
+                if (metadata == null)
+                    continue;
+
+                var master = metadata.Nodes.SingleOrDefault(n => n.IsMaster);
+                if (master == null)
+                {
+                    Console.WriteLine("Critical error: there's no master in cluster");
+                    return;
+                    // throw new ApplicationException("Critical Error! There's no master in cluster");
+                }
+
+                ms_Proxy.Dispose();
+
+
+                ms_Proxy = new SafeQueueServiceProxy(master.Address);
+                var testCall = ms_Proxy.GetClusterMetadata();
+                if (testCall == null) continue;
+
+                MasterAddress = master.Address;
+                newNodes = metadata.Nodes;
+                ms_Proxy.OnClientCallFailed += HandleClientCallFailed;
+
+                success = true;
+            }
+
+            ms_Nodes = newNodes;
+
+            if (success)
+                Console.WriteLine("Found new master on {0}", MasterAddress);
+            else
+                Console.WriteLine("Connection is lost to all servers!!!");
+        }
+
+        public static SafeQueueServiceProxy CreateProxy(string address)
+        {
+            var proxy = new SafeQueueServiceProxy(address);
+            proxy.OnClientCallFailed += HandleClientCallFailed;
+            return proxy;
         }
 
         static void ShowUsage()

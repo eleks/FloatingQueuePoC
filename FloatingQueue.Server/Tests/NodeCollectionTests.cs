@@ -112,6 +112,15 @@ namespace FloatingQueue.Server.Tests
         }
 
         [Test]
+        public void AddNewNodeForbidsIdDuplication()
+        {
+            var nodes = CreateNodes(2);
+            var nodesCollection = new NodeCollection(nodes);
+
+            Assert.Throws<ArgumentException>(() => nodesCollection.AddNewNode(new NodeConfiguration{ServerId = 1}));
+        }
+
+        [Test]
         public void CannotAddSecondMasterTest()
         {
             var nodes = CreateNodes(NodesCount);
@@ -128,7 +137,7 @@ namespace FloatingQueue.Server.Tests
             var nodes = CreateNodes(NodesCount);
             var nodesColection = new NodeCollection(nodes);
 
-            nodesColection.AddNewNode(new NodeConfiguration());
+            nodesColection.AddNewNode(new NodeConfiguration() {ServerId = 19});
 
             Assert.AreEqual(NodesCount + 1, nodesColection.All.Count());
         }
@@ -153,12 +162,6 @@ namespace FloatingQueue.Server.Tests
             Assert.AreEqual(NodesCount - 1, nodesColection.All.Count());
         }
 
-        [Test]
-        public void ReturnTypeMustBeMostConcreteTest()
-        {
-            Assert.Fail("Remove IEnumerables");
-        }
-
         private List<INodeConfiguration> CreateNodes(int count, Func<byte, byte> idSelector, Func<byte, bool> masterSelector)
         {
             var nodes = new List<INodeConfiguration>();
@@ -166,7 +169,8 @@ namespace FloatingQueue.Server.Tests
             {
                 nodes.Add(new NodeConfiguration
                               {
-                                  Address = String.Format("net.tcp://localhost:{0}", 11080 + i),
+                                  //todo TR: rerun test after NodeConfiguration Class has been changed
+                                  InternalAddress = String.Format("net.tcp://localhost:{0}", 11080 + i),
                                   IsReadonly = false,
                                   IsSynced = true,
                                   Proxy = m_InternalQueueServiceProxyMock.Object,
