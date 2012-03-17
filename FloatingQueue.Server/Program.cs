@@ -48,11 +48,7 @@ namespace FloatingQueue.Server
             var container = componentsManager.GetContainer(configuration);
             Core.Server.Init(container);
 
-            Core.Server.Log.Info("Nodes:");
-            foreach (var node in configuration.Nodes.SyncedSiblings)
-            {
-                Core.Server.Log.Info("\t{0}", node.InternalAddress);
-            }
+            
         }
 
         private static ServerConfiguration ParseConfiguration(string[] args)
@@ -89,7 +85,6 @@ namespace FloatingQueue.Server
                                               {
                                                   InternalAddress = intAddress,
                                                   PublicAddress = pubAddress,
-                                                  Proxy = new InternalQueueServiceProxy(intAddress),
                                                   IsMaster = master,
                                                   IsSynced = true,
                                                   IsReadonly = false,
@@ -104,11 +99,10 @@ namespace FloatingQueue.Server
                   {
                       InternalAddress = string.Format(addressMask, localAddress, internalPort),
                       PublicAddress = string.Format(addressMask, localAddress, publicPort),
-                      Proxy = null, // we don't want a circular reference
                       IsMaster = isMaster,
                       IsSynced = isSynced,
                       IsReadonly = false,
-                      ServerId = configuration.ServerId,
+                      ServerId = configuration.ServerId
                   });
             var allNodes = new NodeCollection(nodes);
 
@@ -171,6 +165,27 @@ namespace FloatingQueue.Server
         {
             var host = CommunicationProvider.Instance.CreateHost<T>(address);
             return host;
+        }
+
+        private static void CreateProxies()
+        {
+            var siblings = Core.Server.Configuration.Nodes.Siblings;
+
+            if (siblings.Count == 0)
+            {
+                Core.Server.Log.Info("No other servers found in cluster");
+                return;
+            }
+                
+
+            Core.Server.Log.Info("Nodes:");
+            foreach (var node in siblings)
+            {
+                node.CreateProxy();
+                Core.Server.Log.Info("\t{0}, {1}, {2}", 
+                    node.InternalAddress,
+                    node.IsMaster ? "master" : "slave");
+            }
         }
 
         private static void ShowUsage()

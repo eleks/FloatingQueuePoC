@@ -24,7 +24,6 @@ namespace FloatingQueue.Server.Services.Implementation
             var newNode = new NodeConfiguration
             {
                 InternalAddress = nodeInfo.Address,
-                Proxy = new InternalQueueServiceProxy(nodeInfo.Address),
                 ServerId = nodeInfo.ServerId,
                 IsSynced = false,
                 IsMaster = false,
@@ -32,6 +31,7 @@ namespace FloatingQueue.Server.Services.Implementation
             };
 
             Core.Server.Configuration.Nodes.AddNewNode(newNode);
+            newNode.CreateProxy();
             newNode.Proxy.Open();
         }
 
