@@ -25,8 +25,13 @@ namespace FloatingQueue.Common.Proxy.QueueServiceProxy
             {
                 base.Push(aggregateId, version, e);
             }
+            catch (FaultException)
+            {
+                throw;
+            }
             catch (Exception)
             {
+                // todo MM: catch more concrete exceptions
                 FireClientCallFailed();
             }
             finally
@@ -42,6 +47,10 @@ namespace FloatingQueue.Common.Proxy.QueueServiceProxy
                 // out parameters cannot be used inside anonymous methods,
                 // otherwise wrapper action would be used
                 return base.TryGetNext(aggregateId, version, out next);
+            }
+            catch (FaultException)
+            {
+                throw;
             }
             catch (Exception)
             {
@@ -60,6 +69,10 @@ namespace FloatingQueue.Common.Proxy.QueueServiceProxy
             try
             {
                 return base.GetAllNext(aggregateId, version);
+            }
+            catch (FaultException)
+            {
+                throw;
             }
             catch (Exception)
             {
@@ -80,8 +93,8 @@ namespace FloatingQueue.Common.Proxy.QueueServiceProxy
             }
             catch (Exception)
             {
-               FireClientCallFailed();
-               return null;
+                FireClientCallFailed();
+                return null;
             }
             finally
             {

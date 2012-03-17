@@ -1,4 +1,6 @@
 ﻿using System;
+using System.ServiceModel;
+using FloatingQueue.Common;
 using FloatingQueue.Server.Replication;
 using FloatingQueue.Server.Services.Proxy;
 
@@ -53,8 +55,8 @@ namespace FloatingQueue.Server.Core
         public byte ServerId { get; set; }
         public void CreateProxy()
         {
-            //todo MM: auto-create proxy on property getter?
-            if (Proxy != null)
+            if (Proxy == null)
+               // Proxy = CommunicationProvider.Instance.CreateChannel<IInternalQueueServiceProxy>(new EndpointAddress(InternalAddress));
                 Proxy = new InternalQueueServiceProxy(InternalAddress);
         }
         public void DeclareAsNewMaster()

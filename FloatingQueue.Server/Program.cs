@@ -168,6 +168,7 @@ namespace FloatingQueue.Server
         private static void DoPostInitializations()
         {
             //todo MM: find a better place for such inits
+            CreateProxies();
             Core.Server.Resolve<IMasterElections>().Init();
             Core.Server.Resolve<INodeSynchronizer>().Init();
         }
@@ -187,13 +188,12 @@ namespace FloatingQueue.Server
                 Core.Server.Log.Info("No other servers found in cluster");
                 return;
             }
-                
 
             Core.Server.Log.Info("Nodes:");
             foreach (var node in siblings)
             {
                 node.CreateProxy();
-                Core.Server.Log.Info("\t{0}, {1}, {2}", 
+                Core.Server.Log.Info("\t{0}, {1}", 
                     node.InternalAddress,
                     node.IsMaster ? "master" : "slave");
             }
