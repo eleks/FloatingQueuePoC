@@ -5,6 +5,7 @@ using System.ServiceModel;
 using System.Threading;
 using System.Threading.Tasks;
 using FloatingQueue.Common;
+using FloatingQueue.Common.Common;
 using FloatingQueue.Common.Proxy.QueueServiceProxy;
 using FloatingQueue.Common.TCPProvider;
 using FloatingQueue.Common.WCF;
@@ -16,14 +17,13 @@ namespace FloatingQueue.TestClient
         private static readonly Random ms_Rand = new Random();
         private static string MasterAddress = "net.tcp://localhost:10080";
         private static SafeQueueServiceProxy ms_Proxy;
-        
+
 
         static void Main(string[] args)
         {
             InitializeCommunicationProvider(useTCP: false);
             //
-            Console.Out.WriteLine("Test Client");
-
+            Logger.Instance.Info("Test Client");
 
             if (!TryCreateProxy(MasterAddress, false, out ms_Proxy))
             {
@@ -44,7 +44,7 @@ namespace FloatingQueue.TestClient
                     {
                         case "push":
                             DoPush(ms_Proxy, atoms.Skip(1).ToArray());
-                            Console.WriteLine("Done. Completed in {0} ms", (DateTime.Now - start).TotalMilliseconds);
+                            Logger.Instance.Info("Done. Completed in {0} ms", (DateTime.Now - start).TotalMilliseconds);
                             break;
                         case "flood":
                             int threads = int.Parse(atoms[1]);
@@ -59,13 +59,13 @@ namespace FloatingQueue.TestClient
                                 task.Start();
                             }
                             Task.WaitAll(tasks.ToArray());
-                            Console.WriteLine("Done. Completed in {0} ms", (DateTime.Now - start).TotalMilliseconds);
+                            Logger.Instance.Info("Done. Completed in {0} ms", (DateTime.Now - start).TotalMilliseconds);
                             break;
                         case "exit":
                             work = false;
                             break;
                         default:
-                            Console.WriteLine("Unknown command");
+                            Logger.Instance.Warn("Unknown command");
                             ShowUsage();
                             break;
                     }
@@ -75,26 +75,18 @@ namespace FloatingQueue.TestClient
 
         private static void DoFlood(int requests)
         {
-            try
+            SafeQueueServiceProxy proxy;
+            if (!TryCreateProxy(MasterAddress, true, out proxy))
+                return;
+            using (proxy)
             {
-                SafeQueueServiceProxy proxy;
-                if (!TryCreateProxy(MasterAddress, true, out proxy))
-                    return;
-                using (proxy)
+                bool stop = false;
+                proxy.OnConnectionLost += () => stop = true;
+                for (int i = 0; i < requests && !stop; i++)
                 {
-                    bool stop = false;
-                    proxy.OnConnectionLost += () => stop = true;
-                    for (int i = 0; i < requests && !stop; i++)
-                    {
-                        proxy.Push(ms_Rand.Next().ToString(), -1, ms_Rand.Next().ToString());
-                    }
+                    proxy.Push(ms_Rand.Next().ToString(), -1, ms_Rand.Next().ToString());
                 }
             }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex.Message + Environment.NewLine + ex.StackTrace);
-            }
-            
         }
 
         static void DoPush(QueueServiceProxyBase proxy, string[] args)
@@ -105,7 +97,7 @@ namespace FloatingQueue.TestClient
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex);
+                Logger.Instance.Error("Unhandled Exception",ex);
                 ShowUsage();
             }
         }
@@ -113,16 +105,16 @@ namespace FloatingQueue.TestClient
         public static bool TryCreateProxy(string address, bool keepConnectionOpened, out SafeQueueServiceProxy proxy)
         {
             proxy = new SafeQueueServiceProxy(address);
-            proxy.OnClientCallFailed += () => Console.WriteLine("Call to {0} failed...", address);
-            proxy.OnConnectionLost += () => Console.WriteLine("Error! Connection to cluster is completely lost");
+            proxy.OnClientCallFailed += () => Logger.Instance.Warn("Call to {0} failed...", address);
+            proxy.OnConnectionLost += () => Logger.Instance.Error("Error! Connection to cluster is completely lost");
             proxy.OnMasterChanged += newMasterAddress =>
                                           {
-                                              Console.WriteLine("New master set on {0}", newMasterAddress);
+                                              Logger.Instance.Info("New master set on {0}", newMasterAddress);
                                               MasterAddress = newMasterAddress;
                                           };
             if (!proxy.Init(keepConnectionOpened))
             {
-                Console.WriteLine("Cannot establish connection with server at {0}", MasterAddress);
+                Logger.Instance.Error("Cannot establish connection with server at {0}", MasterAddress);
                 return false;
             }
             return true;
@@ -147,11 +139,11 @@ namespace FloatingQueue.TestClient
 
         static void ShowUsage()
         {
-            Console.WriteLine("Usage: <command> <arg1> .. <argN>");
-            Console.WriteLine("Commands:");
-            Console.WriteLine("\tpush <aggregateId> <version> <data>");
-            Console.WriteLine("\tflood <threads> <requests>");
-            Console.WriteLine("\texit");
+            Logger.Instance.Info("Usage: <command> <arg1> .. <argN>");
+            Logger.Instance.Info("Commands:");
+            Logger.Instance.Info("\tpush <aggregateId> <version> <data>");
+            Logger.Instance.Info("\tflood <threads> <requests>");
+            Logger.Instance.Info("\texit");
         }
     }
 }

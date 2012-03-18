@@ -1,4 +1,5 @@
 ﻿using System;
+using FloatingQueue.Common.Common;
 using FloatingQueue.Server.Core;
 
 namespace FloatingQueue.Server.Tests

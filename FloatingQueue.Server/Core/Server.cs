@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading;
 using Autofac;
+using FloatingQueue.Common.Common;
 using FloatingQueue.Server.Exceptions;
 
 namespace FloatingQueue.Server.Core
@@ -17,7 +18,7 @@ namespace FloatingQueue.Server.Core
             {
                 #if !UNITTESTS
 
-                throw new ServerInitializationException("Server is already initialized");
+                //throw new ServerInitializationException("Server is already initialized");
 
                 #endif
             }

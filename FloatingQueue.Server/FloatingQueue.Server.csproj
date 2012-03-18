@@ -109,7 +109,6 @@
     <Compile Include="EventsLogic\EventAggregate.cs" />
     <Compile Include="Exceptions\BadConfigurationException.cs" />
     <Compile Include="Core\ComponentsManager.cs" />
-    <Compile Include="Core\Logger.cs" />
     <Compile Include="Core\Server.cs" />
     <Compile Include="Exceptions\OptimisticLockException.cs" />
     <Compile Include="Program.cs" />
