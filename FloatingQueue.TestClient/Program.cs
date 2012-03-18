@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.ServiceModel;
+using System.Threading;
 using System.Threading.Tasks;
 using FloatingQueue.Common;
 using FloatingQueue.Common.Proxy.QueueServiceProxy;
@@ -15,24 +16,20 @@ namespace FloatingQueue.TestClient
         private static readonly Random ms_Rand = new Random();
         private static string MasterAddress = "net.tcp://localhost:10080";
         private static SafeQueueServiceProxy ms_Proxy;
-        private static List<Node> ms_Nodes;
+        
 
         static void Main(string[] args)
         {
-            InitializeCommunicationProvider(useTCP: true);
+            InitializeCommunicationProvider(useTCP: false);
             //
             Console.Out.WriteLine("Test Client");
-            ms_Proxy = CreateProxy(MasterAddress);
 
-            var metadata = ms_Proxy.GetClusterMetadata();
-            if (metadata == null)
+
+            if (!TryCreateProxy(MasterAddress, false, out ms_Proxy))
             {
-                Console.WriteLine("Cannot establish connection with server at {0}", MasterAddress);
                 Console.ReadLine();
                 return;
             }
-
-            ms_Nodes = metadata.Nodes;
 
             bool work = true;
             while (work)
@@ -78,11 +75,26 @@ namespace FloatingQueue.TestClient
 
         private static void DoFlood(int requests)
         {
-            using (var proxy = CreateProxy(MasterAddress))
-            for (int i = 0; i < requests; i++)
+            try
             {
-                proxy.Push(ms_Rand.Next().ToString(), -1, ms_Rand.Next().ToString());
+                SafeQueueServiceProxy proxy;
+                if (!TryCreateProxy(MasterAddress, true, out proxy))
+                    return;
+                using (proxy)
+                {
+                    bool stop = false;
+                    proxy.OnConnectionLost += () => stop = true;
+                    for (int i = 0; i < requests && !stop; i++)
+                    {
+                        proxy.Push(ms_Rand.Next().ToString(), -1, ms_Rand.Next().ToString());
+                    }
+                }
             }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message + Environment.NewLine + ex.StackTrace);
+            }
+            
         }
 
         static void DoPush(QueueServiceProxyBase proxy, string[] args)
@@ -98,56 +110,22 @@ namespace FloatingQueue.TestClient
             }
         }
 
-        private static void HandleClientCallFailed()
+        public static bool TryCreateProxy(string address, bool keepConnectionOpened, out SafeQueueServiceProxy proxy)
         {
-            Console.WriteLine("Connection lost with {0}. Trying to establish new connection...", MasterAddress);
-
-            bool success = false;
-            List<Node> newNodes = null;
-
-            foreach (var node in ms_Nodes)
+            proxy = new SafeQueueServiceProxy(address);
+            proxy.OnClientCallFailed += () => Console.WriteLine("Call to {0} failed...", address);
+            proxy.OnConnectionLost += () => Console.WriteLine("Error! Connection to cluster is completely lost");
+            proxy.OnMasterChanged += newMasterAddress =>
+                                          {
+                                              Console.WriteLine("New master set on {0}", newMasterAddress);
+                                              MasterAddress = newMasterAddress;
+                                          };
+            if (!proxy.Init(keepConnectionOpened))
             {
-                var proxy = new SafeQueueServiceProxy(node.Address);
-
-                var metadata = proxy.GetClusterMetadata();
-                if (metadata == null)
-                    continue;
-
-                var master = metadata.Nodes.SingleOrDefault(n => n.IsMaster);
-                if (master == null)
-                {
-                    Console.WriteLine("Critical error: there's no master in cluster");
-                    return;
-                    // throw new ApplicationException("Critical Error! There's no master in cluster");
-                }
-
-                ms_Proxy.Dispose();
-
-
-                ms_Proxy = new SafeQueueServiceProxy(master.Address);
-                var testCall = ms_Proxy.GetClusterMetadata();
-                if (testCall == null) continue;
-
-                MasterAddress = master.Address;
-                newNodes = metadata.Nodes;
-                ms_Proxy.OnClientCallFailed += HandleClientCallFailed;
-
-                success = true;
+                Console.WriteLine("Cannot establish connection with server at {0}", MasterAddress);
+                return false;
             }
-
-            ms_Nodes = newNodes;
-
-            if (success)
-                Console.WriteLine("Found new master on {0}", MasterAddress);
-            else
-                Console.WriteLine("Connection is lost to all servers!!!");
-        }
-
-        public static SafeQueueServiceProxy CreateProxy(string address)
-        {
-            var proxy = new SafeQueueServiceProxy(address);
-            proxy.OnClientCallFailed += HandleClientCallFailed;
-            return proxy;
+            return true;
         }
 
         private static void InitializeCommunicationProvider(bool useTCP)

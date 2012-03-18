@@ -26,7 +26,7 @@ namespace FloatingQueue.Server
                 return;
             }
 
-            InitializeCommunicationProvider(useTCP : true);
+            InitializeCommunicationProvider(useTCP : false);
 
             Initialize(args);
             RunHosts();
@@ -163,10 +163,12 @@ namespace FloatingQueue.Server
 
             Core.Server.Log.Info("Press <ENTER> to terminate Host");
             Console.ReadLine();
-            Core.Server.Resolve<IConnectionManager>().CloseOutcomingConnections();
-            //
+            
+            // first let all request finish their task
             publicHost.Close();
             internalHost.Close();
+
+            Core.Server.Resolve<IConnectionManager>().CloseOutcomingConnections();
         }
 
         private static void DoPostInitializations()
