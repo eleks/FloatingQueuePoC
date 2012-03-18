@@ -50,11 +50,12 @@ namespace FloatingQueue.Server.Core
         public bool IsMaster { get; set; }
         public bool IsSynced { get; set; }
         public bool IsReadonly { get; set; }
+        public bool IsSelf { get; set; }
         public byte ServerId { get; set; }
         public void CreateProxy()
         {
             //todo MM: auto-create proxy on property getter?
-            if (Proxy != null)
+            if (!IsSelf && Proxy == null)
                 Proxy = new InternalQueueServiceProxy(InternalAddress);
         }
         public void DeclareAsNewMaster()

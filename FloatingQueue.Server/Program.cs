@@ -26,7 +26,7 @@ namespace FloatingQueue.Server
                 return;
             }
 
-            InitializeCommunicationProvider(useTCP : false);
+            InitializeCommunicationProvider(useTCP : true);
 
             Initialize(args);
             RunHosts();
@@ -55,11 +55,13 @@ namespace FloatingQueue.Server
         {
             var configuration = ParseConfiguration(args);
 
+
             var componentsManager = new ComponentsManager();
             var container = componentsManager.GetContainer(configuration);
             Core.Server.Init(container);
 
-            
+
+            CreateProxies();
         }
 
         private static ServerConfiguration ParseConfiguration(string[] args)
@@ -99,6 +101,7 @@ namespace FloatingQueue.Server
                                                   IsMaster = master,
                                                   IsSynced = true,
                                                   IsReadonly = false,
+                                                  IsSelf = false,
                                                   ServerId = id
                                               };
                                           }))}
@@ -113,6 +116,7 @@ namespace FloatingQueue.Server
                       IsMaster = isMaster,
                       IsSynced = isSynced,
                       IsReadonly = false,
+                      IsSelf = true,
                       ServerId = configuration.ServerId
                   });
             var allNodes = new NodeCollection(nodes);
@@ -193,7 +197,7 @@ namespace FloatingQueue.Server
             foreach (var node in siblings)
             {
                 node.CreateProxy();
-                Core.Server.Log.Info("\t{0}, {1}, {2}", 
+                Core.Server.Log.Info("\t{0}, {1}", 
                     node.InternalAddress,
                     node.IsMaster ? "master" : "slave");
             }

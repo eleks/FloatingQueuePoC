@@ -19,7 +19,7 @@ namespace FloatingQueue.TestClient
 
         static void Main(string[] args)
         {
-            InitializeCommunicationProvider(useTCP: false);
+            InitializeCommunicationProvider(useTCP: true);
             //
             Console.Out.WriteLine("Test Client");
             ms_Proxy = CreateProxy(MasterAddress);
