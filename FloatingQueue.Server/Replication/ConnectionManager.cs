@@ -20,7 +20,7 @@ namespace FloatingQueue.Server.Replication
         private bool m_MonitoringEnabled = false;
 
         private readonly object m_InitializationLock = new object();
-        private readonly object m_MonitoringLock = new object();
+        private readonly object m_ConnectionLock = new object();
 
         public event ConnectionLostHandler OnConnectionLoss;
 
@@ -42,12 +42,15 @@ namespace FloatingQueue.Server.Replication
         }
         public void CloseOutcomingConnections()
         {
-            foreach (var node in Core.Server.Configuration.Nodes.SyncedSiblings)
+            lock (m_ConnectionLock)
             {
-                node.Proxy.Close();
+                foreach (var node in Core.Server.Configuration.Nodes.SyncedSiblings)
+                {
+                    node.Proxy.Close();
+                }
+                StopMonitoringConnections();
+                m_IsConnectionOpened = false;
             }
-            StopMonitoringConnections();
-            m_IsConnectionOpened = false;
         }
 
         public bool TryReplicate(string aggregateId, int version, object e)
@@ -57,6 +60,8 @@ namespace FloatingQueue.Server.Replication
                 OpenOutcomingConnections();
             }
             int replicas = 0;
+            //lock (m_ConnectionLock) //note MM: this lock would avoid firing connection loss twice, but in cost of performance.
+            //{
             foreach (var node in Core.Server.Configuration.Nodes.SyncedSiblings)
             {
                 try
@@ -64,6 +69,9 @@ namespace FloatingQueue.Server.Replication
                     node.Proxy.Push(aggregateId, version, e);
                     replicas++;
                 }
+                //catch (ObjectDisposedException) //todo
+                //{
+                //}
                 catch (CommunicationException)
                 {
                     FireConnectionLoss(node.ServerId);
@@ -74,8 +82,7 @@ namespace FloatingQueue.Server.Replication
                     Core.Server.Log.Warn("Cannot push.", ex);
                 }
             }
-
-            // todo MM: Server.Configuration.Nodes.RemoveDeadProxies();
+            //}
 
             return replicas > 0;
         }
@@ -83,7 +90,7 @@ namespace FloatingQueue.Server.Replication
         // todo MM: consider pinging both addresses - public and internal
         private void StartMonitoringConnections()
         {
-            lock (m_MonitoringLock)
+            lock (m_ConnectionLock)
             {
                 m_MonitoringEnabled = true;
             }
@@ -91,16 +98,12 @@ namespace FloatingQueue.Server.Replication
         }
         private void StopMonitoringConnections()
         {
-            lock (m_MonitoringLock)
-            {
-                m_MonitoringEnabled = false;
-            }
+            m_MonitoringEnabled = false;
         }
 
         private bool m_IsMonitoring = false;
         private void DoMonitoring(object state)
         {
-            // note MM: currently monitoring thread is stopped automatically when process is stopped, but this is a proper way to stop it without stopping process
             if (m_IsMonitoring)
                 return;
             m_IsMonitoring = true;
@@ -110,6 +113,8 @@ namespace FloatingQueue.Server.Replication
                 while (!stop)
                 {
                     Core.Server.Log.Debug("Pinging other servers");
+                    //lock (m_ConnectionLock)
+                    //{
                     foreach (var node in Core.Server.Configuration.Nodes.SyncedSiblings)
                     {
                         var resultCode = node.Proxy.Ping();
@@ -121,8 +126,11 @@ namespace FloatingQueue.Server.Replication
                             FireConnectionLoss(node.ServerId);
                         }
                     }
+                    //}
+
                     Thread.Sleep(Core.Server.Configuration.PingTimeout);
-                    lock (m_MonitoringLock)
+
+                    lock (m_ConnectionLock)
                     {
                         stop = !m_MonitoringEnabled;
                     }
