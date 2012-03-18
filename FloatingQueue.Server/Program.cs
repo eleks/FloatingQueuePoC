@@ -26,7 +26,7 @@ namespace FloatingQueue.Server
                 return;
             }
 
-            InitializeCommunicationProvider(useTCP : false);
+            InitializeCommunicationProvider(useTCP : true);
 
             Initialize(args);
             RunHosts();
@@ -55,11 +55,13 @@ namespace FloatingQueue.Server
         {
             var configuration = ParseConfiguration(args);
 
+
             var componentsManager = new ComponentsManager();
             var container = componentsManager.GetContainer(configuration);
             Core.Server.Init(container);
 
-            
+
+            CreateProxies();
         }
 
         private static ServerConfiguration ParseConfiguration(string[] args)
@@ -99,6 +101,7 @@ namespace FloatingQueue.Server
                                                   IsMaster = master,
                                                   IsSynced = true,
                                                   IsReadonly = false,
+                                                  IsSelf = false,
                                                   ServerId = id
                                               };
                                           }))}
@@ -113,6 +116,7 @@ namespace FloatingQueue.Server
                       IsMaster = isMaster,
                       IsSynced = isSynced,
                       IsReadonly = false,
+                      IsSelf = true,
                       ServerId = configuration.ServerId
                   });
             var allNodes = new NodeCollection(nodes);
@@ -168,14 +172,13 @@ namespace FloatingQueue.Server
         private static void DoPostInitializations()
         {
             //todo MM: find a better place for such inits
-            CreateProxies();
             Core.Server.Resolve<IMasterElections>().Init();
             Core.Server.Resolve<INodeSynchronizer>().Init();
         }
 
         private static ICommunicationObject CreateHost<T>(string address)
         {
-            var host = CommunicationProvider.Instance.CreateHost<T>(address);
+            var host = CommunicationProvider.Instance.CreateHost<T>(typeof(T).Name, address);
             return host;
         }
 

@@ -52,11 +52,11 @@ namespace FloatingQueue.Server.Core
         public bool IsMaster { get; set; }
         public bool IsSynced { get; set; }
         public bool IsReadonly { get; set; }
+        public bool IsSelf { get; set; }
         public byte ServerId { get; set; }
         public void CreateProxy()
         {
-            if (Proxy == null)
-               // Proxy = CommunicationProvider.Instance.CreateChannel<IInternalQueueServiceProxy>(new EndpointAddress(InternalAddress));
+            if (!IsSelf && Proxy == null)
                 Proxy = new InternalQueueServiceProxy(InternalAddress);
         }
         public void DeclareAsNewMaster()

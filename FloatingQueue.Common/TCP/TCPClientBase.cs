@@ -68,12 +68,18 @@ namespace FloatingQueue.Common.TCP
         {
             var stream = m_TcpClient.GetStream();
             var done = 0;
-            while(done < buf.Length)
+            try
             {
-                var justRead = stream.Read(buf, done, buf.Length - done);
-                if (justRead == 0)
-                    break;
-                done += justRead;
+                while (done < buf.Length)
+                {
+                    var justRead = stream.Read(buf, done, buf.Length - done);
+                    if (justRead == 0)
+                        break;
+                    done += justRead;
+                }
+            }
+            catch(IOException)
+            {
             }
             return done;
         }
@@ -106,9 +112,9 @@ namespace FloatingQueue.Common.TCP
             //
             var recvData = new TCPBinaryReader(TCPCommunicationSignature.Response, ReadBuffer);
             if (!recvData.IsComplete)
-                throw new InvalidDataException("Incomplete response received");
+                throw new IOException("Incomplete response received");
             if (recvData.Command != request.Command)
-                throw new InvalidDataException("Invalid response command");
+                throw new IOException("Invalid response command");
             return recvData;
         }
     }
