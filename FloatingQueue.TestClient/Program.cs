@@ -4,6 +4,7 @@ using System.Linq;
 using System.ServiceModel;
 using System.Threading.Tasks;
 using FloatingQueue.Common;
+using FloatingQueue.Common.Common;
 using FloatingQueue.Common.Proxy.QueueServiceProxy;
 using FloatingQueue.Common.TCPProvider;
 using FloatingQueue.Common.WCF;
@@ -21,13 +22,13 @@ namespace FloatingQueue.TestClient
         {
             InitializeCommunicationProvider(useTCP: true);
             //
-            Console.Out.WriteLine("Test Client");
+            Logger.Instance.Info("Test Client");
             ms_Proxy = CreateProxy(MasterAddress);
 
             var metadata = ms_Proxy.GetClusterMetadata();
             if (metadata == null)
             {
-                Console.WriteLine("Cannot establish connection with server at {0}", MasterAddress);
+                Logger.Instance.Info("Cannot establish connection with server at {0}", MasterAddress);
                 Console.ReadLine();
                 return;
             }
@@ -47,7 +48,7 @@ namespace FloatingQueue.TestClient
                     {
                         case "push":
                             DoPush(ms_Proxy, atoms.Skip(1).ToArray());
-                            Console.WriteLine("Done. Completed in {0} ms", (DateTime.Now - start).TotalMilliseconds);
+                            Logger.Instance.Info("Done. Completed in {0} ms", (DateTime.Now - start).TotalMilliseconds);
                             break;
                         case "flood":
                             int threads = int.Parse(atoms[1]);
@@ -62,13 +63,13 @@ namespace FloatingQueue.TestClient
                                 task.Start();
                             }
                             Task.WaitAll(tasks.ToArray());
-                            Console.WriteLine("Done. Completed in {0} ms", (DateTime.Now - start).TotalMilliseconds);
+                            Logger.Instance.Info("Done. Completed in {0} ms", (DateTime.Now - start).TotalMilliseconds);
                             break;
                         case "exit":
                             work = false;
                             break;
                         default:
-                            Console.WriteLine("Unknown command");
+                            Logger.Instance.Info("Unknown command");
                             ShowUsage();
                             break;
                     }
@@ -93,14 +94,14 @@ namespace FloatingQueue.TestClient
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex);
+                Logger.Instance.Error("Unhandled Exception", ex);
                 ShowUsage();
             }
         }
 
         private static void HandleClientCallFailed()
         {
-            Console.WriteLine("Connection lost with {0}. Trying to establish new connection...", MasterAddress);
+            Logger.Instance.Info("Connection lost with {0}. Trying to establish new connection...", MasterAddress);
 
             bool success = false;
             List<Node> newNodes = null;
@@ -116,7 +117,7 @@ namespace FloatingQueue.TestClient
                 var master = metadata.Nodes.SingleOrDefault(n => n.IsMaster);
                 if (master == null)
                 {
-                    Console.WriteLine("Critical error: there's no master in cluster");
+                    Logger.Instance.Info("Critical error: there's no master in cluster");
                     return;
                     // throw new ApplicationException("Critical Error! There's no master in cluster");
                 }
@@ -138,9 +139,9 @@ namespace FloatingQueue.TestClient
             ms_Nodes = newNodes;
 
             if (success)
-                Console.WriteLine("Found new master on {0}", MasterAddress);
+                Logger.Instance.Info("Found new master on {0}", MasterAddress);
             else
-                Console.WriteLine("Connection is lost to all servers!!!");
+                Logger.Instance.Info("Connection is lost to all servers!!!");
         }
 
         public static SafeQueueServiceProxy CreateProxy(string address)
@@ -169,11 +170,11 @@ namespace FloatingQueue.TestClient
 
         static void ShowUsage()
         {
-            Console.WriteLine("Usage: <command> <arg1> .. <argN>");
-            Console.WriteLine("Commands:");
-            Console.WriteLine("\tpush <aggregateId> <version> <data>");
-            Console.WriteLine("\tflood <threads> <requests>");
-            Console.WriteLine("\texit");
+            Logger.Instance.Info("Usage: <command> <arg1> .. <argN>");
+            Logger.Instance.Info("Commands:");
+            Logger.Instance.Info("\tpush <aggregateId> <version> <data>");
+            Logger.Instance.Info("\tflood <threads> <requests>");
+            Logger.Instance.Info("\texit");
         }
     }
 }

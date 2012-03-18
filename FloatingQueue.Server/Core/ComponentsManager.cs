@@ -1,5 +1,6 @@
 ﻿using System;
 using Autofac;
+using FloatingQueue.Common.Common;
 using FloatingQueue.Server.EventsLogic;
 using FloatingQueue.Server.Replication;
 

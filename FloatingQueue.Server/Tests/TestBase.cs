@@ -1,4 +1,5 @@
 ﻿using Autofac;
+using FloatingQueue.Common.Common;
 using FloatingQueue.Server.Core;
 using NUnit.Framework;
 
