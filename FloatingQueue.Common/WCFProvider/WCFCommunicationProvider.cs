@@ -21,7 +21,7 @@ namespace FloatingQueue.Common.WCF
             var serviceType = typeof(T);
             var serviceUri = new Uri(address);
 
-            var host = new ServiceHost(serviceType, serviceUri);
+            var host = new ServiceHost(serviceType, serviceUri) {CloseTimeout = TimeSpan.FromMilliseconds(100)};
             return host;
         }
     }
