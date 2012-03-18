@@ -178,7 +178,7 @@ namespace FloatingQueue.Server
 
         private static ICommunicationObject CreateHost<T>(string address)
         {
-            var host = CommunicationProvider.Instance.CreateHost<T>(address);
+            var host = CommunicationProvider.Instance.CreateHost<T>(typeof(T).Name, address);
             return host;
         }
 

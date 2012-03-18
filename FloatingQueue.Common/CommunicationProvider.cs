@@ -10,7 +10,7 @@ namespace FloatingQueue.Common
     {
         T CreateChannel<T>(EndpointAddress endpointAddress);
 
-        ICommunicationObject CreateHost<T>(string address);
+        ICommunicationObject CreateHost<T>(string displayName, string address);
     }
 
 

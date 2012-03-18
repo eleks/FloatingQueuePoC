@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
@@ -11,18 +12,21 @@ namespace FloatingQueue.Common.TCP
 {
     public interface ITCPServer
     {
-        void Initialize(string address);
+        void Initialize(string displayName, string address);
     }
 
 
 
     public abstract class TCPServerBase : TCPCommunicationObjectBase, ITCPServer
     {
+        public string DisplayName { get; private set; }
         public int Port { get; private set; }
         private ConnectionListenerThread m_ListenerThread;
 
-        public void Initialize(string address)
+        public void Initialize(string displayName, string address)
         {
+            DisplayName = displayName;
+            //
             var uri = new Uri(address);
             Port = uri.Port;
             //
@@ -56,6 +60,7 @@ namespace FloatingQueue.Common.TCP
             //private readonly List<ThreadBase> m_IdleThreads = new List<ThreadBase>();
 
             public ConnectionListenerThread(TCPServerBase server)
+                : base(server.DisplayName + " - Listener")
             {
                 m_Server = server;
                 m_Listener = new TcpListener(IPAddress.Any, m_Server.Port);
@@ -111,6 +116,7 @@ namespace FloatingQueue.Common.TCP
             private TcpClient m_TcpClient;
 
             public ConnectionWorkerThread(TCPServerBase server)
+                : base(server.DisplayName + " - Worker")
             {
                 m_Server = server;
             }
@@ -129,12 +135,18 @@ namespace FloatingQueue.Common.TCP
             private int ReadBuffer(byte[] buf)
             {
                 var done = 0;
-                while (done < buf.Length)
+                try
                 {
-                    var justRead = m_TcpClient.GetStream().Read(buf, done, buf.Length - done);
-                    if (justRead == 0)
-                        break;
-                    done += justRead;
+                    while (done < buf.Length)
+                    {
+                        var justRead = m_TcpClient.GetStream().Read(buf, done, buf.Length - done);
+                        if (justRead == 0)
+                            break;
+                        done += justRead;
+                    }
+                }
+                catch(IOException)
+                {
                 }
                 return done;
             }

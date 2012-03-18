@@ -23,13 +23,13 @@ namespace FloatingQueue.Common.TCPProvider
             return (T)(object) res;
         }
 
-        public ICommunicationObject CreateHost<T>(string address)
+        public ICommunicationObject CreateHost<T>(string displayName, string address)
         {
             Func<TCPServerBase> ctor;
             if (!m_HostMap.TryGetValue(typeof(T), out ctor))
                 throw new Exception("Implementation unknown for type " + typeof(T).FullName);
             var res = ctor();
-            res.Initialize(address);
+            res.Initialize(displayName, address);
             return res;
         }
 

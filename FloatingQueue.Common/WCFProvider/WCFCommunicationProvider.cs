@@ -16,7 +16,7 @@ namespace FloatingQueue.Common.WCF
             return ChannelFactory<T>.CreateChannel(m_Binding, endpointAddress);
         }
 
-        public ICommunicationObject CreateHost<T>(string address)
+        public ICommunicationObject CreateHost<T>(string displayName, string address)
         {
             var serviceType = typeof(T);
             var serviceUri = new Uri(address);

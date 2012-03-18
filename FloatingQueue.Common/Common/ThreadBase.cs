@@ -32,9 +32,11 @@ namespace FloatingQueue.Common.Common
         private readonly Thread m_Thread;
         private ThreadState m_State;
 
-        protected ThreadBase()
+        protected ThreadBase(string threadName = null)
         {
             m_Thread = new Thread(Run);
+            if (threadName != null)
+                m_Thread.Name = threadName;
         }
 
         public void Start(Action<Exception> onThreadFailed)
