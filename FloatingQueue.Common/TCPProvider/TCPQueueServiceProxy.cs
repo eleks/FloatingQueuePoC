@@ -49,10 +49,10 @@ namespace FloatingQueue.Common.TCPProvider
             var req = CreateRequest("GetClusterMetadata");
             var resp = SendReceive(req);
             var sz = resp.ReadInt32();
-            var list = new List<Node>(sz);
+            var list = new List<NodeInfo>(sz);
             for (int i = 0; i < sz; i++)
             {
-                var node = new Node();
+                var node = new NodeInfo();
                 node.Address = resp.ReadString();
                 node.IsMaster = resp.ReadBoolean();
                 list.Add(node);

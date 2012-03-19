@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using FloatingQueue.Common;
 using FloatingQueue.Server.EventsLogic;
@@ -14,13 +15,16 @@ namespace FloatingQueue.Server.Services.Implementation
         {
             Core.Server.Log.Info("Command: push {0} {1} {2}", aggregateId, version, e);
 
+            if (Core.Server.Configuration.IsReadonly)
+                throw new ReadOnlyException("Server is currently in readonly mode. Writes are not allowed");
+
+            if (!Core.Server.Configuration.IsSynced)
+                throw new InvalidOperationException("Write is not allowed to unsynced server");
+
             // note MM: potential bug - if rollback is required, an aggregate who has just been created will not be deleted
             var aggregate = GetEventAggregate(aggregateId);
             try
             {
-                if (!HandleSynchronizationPush(aggregate, version, e))
-                    return;
-
                 aggregate.Push(version, e);
                 if (Core.Server.Configuration.IsMaster)
                 {
@@ -29,11 +33,6 @@ namespace FloatingQueue.Server.Services.Implementation
                     {
                         throw new ApplicationException("Cannot replicate the data.");
                     }
-                }
-                else
-                {
-                    // todo: find a better place to open connections from slaves
-                    Core.Server.Resolve<IConnectionManager>().OpenOutcomingConnections();
                 }
                 aggregate.Commit();
             }
@@ -46,7 +45,7 @@ namespace FloatingQueue.Server.Services.Implementation
 
         public virtual bool TryGetNext(string aggregateId, int version, out object next)
         {
-            if (Core.Server.Configuration.IsSyncing)
+            if (!Core.Server.Configuration.IsSynced)
                 throw new BusinessLogicException("Cannot read from node, who's in syncing state");
 
             var aggregate = GetEventAggregate(aggregateId);
@@ -55,7 +54,7 @@ namespace FloatingQueue.Server.Services.Implementation
 
         public virtual IEnumerable<object> GetAllNext(string aggregateId, int version)
         {
-            if (Core.Server.Configuration.IsSyncing)
+            if (!Core.Server.Configuration.IsSynced)
                 throw new BusinessLogicException("Cannot read from node, who's in syncing state");
 
             var aggregate = GetEventAggregate(aggregateId);
@@ -66,7 +65,7 @@ namespace FloatingQueue.Server.Services.Implementation
         {
             //todo: pinging other servers here would make client's life a bit easier
             var nodes = Core.Server.Configuration.Nodes.All
-                .Select(n => new Node {Address = n.PublicAddress, IsMaster = n.IsMaster}).ToList();
+                .Select(n => new NodeInfo {Address = n.PublicAddress, IsMaster = n.IsMaster}).ToList();
             return new ClusterMetadata(nodes);
         }
 
@@ -79,14 +78,5 @@ namespace FloatingQueue.Server.Services.Implementation
             }
             return aggregate;
         }
-
-        private bool HandleSynchronizationPush(IEventAggregate aggregate, int version, object e)
-        {
-            if (!Core.Server.Configuration.IsSyncing)
-                return true;
-            
-            throw new NotImplementedException("Here a write to temporary storage is required");
-        }
-
     }
 }

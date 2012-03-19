@@ -31,7 +31,7 @@ namespace FloatingQueue.Server.Tests
         [Test, ExpectedException(typeof(BusinessLogicException))]
         public void GetAllNext_WhenSyncing_Test()
         {
-            m_ServerConfiguration.SetupGet(m => m.IsSyncing).Returns(true);
+            m_ServerConfiguration.SetupGet(m => m.IsSynced).Returns(false);
             var service = GetService();
 
             service.GetAllNext("a", -1);
@@ -40,7 +40,7 @@ namespace FloatingQueue.Server.Tests
         [Test, Combinatorial]
         public void GetAllNextTest([Values(true, false)]bool aggregateExists)
         {
-            m_ServerConfiguration.SetupGet(m => m.IsSyncing).Returns(false);
+            m_ServerConfiguration.SetupGet(m => m.IsSynced).Returns(true);
             var events = new[] { "a", "b", "c" };
             m_EventAggregateMock.Setup(m => m.GetAllNext(It.IsAny<int>())).Returns(events).Verifiable();
             var aggregate = m_EventAggregateMock.Object;
@@ -58,7 +58,7 @@ namespace FloatingQueue.Server.Tests
         [Test, ExpectedException(typeof(BusinessLogicException))]
         public void TryGetNext_WhenSyncing_Test()
         {
-            m_ServerConfiguration.SetupGet(m => m.IsSyncing).Returns(true);
+            m_ServerConfiguration.SetupGet(m => m.IsSynced).Returns(false);
             var service = GetService();
 
             object next;
@@ -68,7 +68,7 @@ namespace FloatingQueue.Server.Tests
         [Test, Combinatorial]
         public void TryGetNextTest([Values(true, false)]bool aggregateExists)
         {
-            m_ServerConfiguration.SetupGet(m => m.IsSyncing).Returns(false);
+            m_ServerConfiguration.SetupGet(m => m.IsSynced).Returns(true);
             object e = "a";
             m_EventAggregateMock.Setup(m => m.TryGetNext(It.IsAny<int>(), out e)).Returns(true).Verifiable();
             var aggregate = m_EventAggregateMock.Object;

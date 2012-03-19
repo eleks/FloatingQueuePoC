@@ -30,7 +30,7 @@ namespace FloatingQueue.Server.Replication
             {
                 if (!m_IsConnectionOpened)
                 {
-                    foreach (var node in Core.Server.Configuration.Nodes.SyncedSiblings)
+                    foreach (var node in Core.Server.Configuration.Nodes.Siblings)
                     {
                         node.Proxy.Open();
                         Core.Server.Log.Info("Connected to \t{0}", node.InternalAddress);
@@ -44,7 +44,7 @@ namespace FloatingQueue.Server.Replication
         {
             lock (m_ConnectionLock)
             {
-                foreach (var node in Core.Server.Configuration.Nodes.SyncedSiblings)
+                foreach (var node in Core.Server.Configuration.Nodes.Siblings)
                 {
                     node.Proxy.Close();
                 }
@@ -62,7 +62,7 @@ namespace FloatingQueue.Server.Replication
             int replicas = 0;
             //lock (m_ConnectionLock) //note MM: this lock would avoid firing connection loss twice, but in cost of performance.
             //{
-            foreach (var node in Core.Server.Configuration.Nodes.SyncedSiblings)
+            foreach (var node in Core.Server.Configuration.Nodes.Siblings)
             {
                 try
                 {
@@ -112,10 +112,13 @@ namespace FloatingQueue.Server.Replication
                 bool stop = false;
                 while (!stop)
                 {
-                    Core.Server.Log.Debug("Pinging other servers");
+                    if (Core.Server.Configuration.Nodes.Siblings.Count == 0)
+                        Core.Server.Log.Info("No other servers to ping...");
+                    else
+                        Core.Server.Log.Debug("Pinging other servers");
                     //lock (m_ConnectionLock)
                     //{
-                    foreach (var node in Core.Server.Configuration.Nodes.SyncedSiblings)
+                    foreach (var node in Core.Server.Configuration.Nodes.Siblings)
                     {
                         var resultCode = node.Proxy.Ping();
 

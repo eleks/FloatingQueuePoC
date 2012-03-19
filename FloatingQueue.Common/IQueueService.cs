@@ -21,19 +21,19 @@ namespace FloatingQueue.Common
 [DataContract]
 public class ClusterMetadata
 {
-    public ClusterMetadata(List<Node> nodes)
+    public ClusterMetadata(List<NodeInfo> nodes)
     {
         Nodes = nodes;
     }
     [DataMember]
-    public List<Node> Nodes;
+    public List<NodeInfo> Nodes;
 }
 
 [DataContract]
-public class Node
+public class NodeInfo
 {
     [DataMember]
-    public string Address;
+    public string Address {get ;set;}
     [DataMember]
-    public bool IsMaster;
+    public bool IsMaster { get; set; }
 }

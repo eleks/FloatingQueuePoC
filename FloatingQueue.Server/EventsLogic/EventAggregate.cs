@@ -66,8 +66,6 @@ namespace FloatingQueue.Server.EventsLogic
             }
         }
 
-        //note MM: TryGetNext, GetAllNext, GetRange would break up, if there's no seek on storage
-
         public IEnumerable<object> GetAllNext(int version)
         {
             lock (m_SyncRoot)

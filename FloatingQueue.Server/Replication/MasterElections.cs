@@ -14,7 +14,6 @@ namespace FloatingQueue.Server.Replication
 
         public void Init()
         {
-            //Core.Server.Resolve<IConnectionManager>().OpenOutcomingConnections();
             Core.Server.Resolve<IConnectionManager>().OnConnectionLoss += OnConnectionLoss;
         }
 
@@ -23,9 +22,10 @@ namespace FloatingQueue.Server.Replication
             lock (m_SyncRoot)
             {
                 if (Core.Server.Configuration.ServerId == lostServerId)
-                {
                     throw new ApplicationException("Server can't loose connection with itself");
-                }
+
+                if (!Core.Server.Configuration.IsSynced)
+                    throw new ApplicationException("Unsynced nodes shouldn't be involved in master elections");
 
                 // this event may fire twice in specific circumstances// todo: avoid
                 if (!Core.Server.Configuration.Nodes.Siblings.Any(n => n.ServerId == lostServerId))

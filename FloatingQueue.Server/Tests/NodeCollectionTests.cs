@@ -56,19 +56,6 @@ namespace FloatingQueue.Server.Tests
         }
 
         [Test]
-        public void SyncSyblingsTest()
-        {
-            m_ServerConfigurationMock.Setup((config) => config.ServerId).Returns(0);
-
-            var nodes = CreateNodes(NodesCount);
-            var nodesCollection = new NodeCollection(nodes);
-
-            var syncedSyblings = nodesCollection.SyncedSiblings;
-
-            Assert.IsTrue(syncedSyblings.All(sybling => sybling.IsSynced));
-        }
-
-        [Test]
         public void AllCountTest()
         {
             var nodes = CreateNodes(NodesCount);
@@ -171,8 +158,6 @@ namespace FloatingQueue.Server.Tests
                               {
                                   //todo TR: rerun test after NodeConfiguration Class has been changed
                                   InternalAddress = String.Format("net.tcp://localhost:{0}", 11080 + i),
-                                  IsReadonly = false,
-                                  IsSynced = true,
                                   Proxy = m_InternalQueueServiceProxyMock.Object,
                                   IsMaster = masterSelector((byte) i),
                                   ServerId = idSelector((byte)i)

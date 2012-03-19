@@ -9,7 +9,7 @@ namespace FloatingQueue.Server.EventsLogic
         bool TryGetEventAggregate(string aggregateId, out IEventAggregate aggregate);
         IEventAggregate CreateAggregate(string aggreagateId);
         List<string> GetAllIds();
-        IDictionary<string, int> GetLastVersions();
+        Dictionary<string, int> GetLastVersions();
     }
 
     public class AggregateRepository : IAggregateRepository
@@ -84,7 +84,7 @@ namespace FloatingQueue.Server.EventsLogic
         }
 
         // todo: refactor this method to GetAllAggregates + (extension method)GetLastVersions
-        public IDictionary<string, int> GetLastVersions()
+        public Dictionary<string, int> GetLastVersions()
         {
             try
             {

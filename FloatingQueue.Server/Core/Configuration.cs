@@ -9,8 +9,6 @@ namespace FloatingQueue.Server.Core
     public interface IConfiguration
     {
         bool IsMaster { get; }
-        bool IsSynced { get; } //note MM: currently all new nodes are not Synced, but this assumption may be false in future
-        bool IsReadonly { get; }
         byte ServerId { get; }
         string InternalAddress { get; }
         string PublicAddress { get; }
@@ -21,25 +19,41 @@ namespace FloatingQueue.Server.Core
         IInternalQueueServiceProxy Proxy { get; }
         void CreateProxy();
         void DeclareAsNewMaster();
-        void DeclareAsSyncedNode();
     }
 
     public interface IServerConfiguration : IConfiguration
     {
         INodeCollection Nodes { get; }
-        bool IsSyncing { get; set; }
         int PingTimeout { get; }
+        void EnterReadonlyMode();
+        void ExitReadonlyMode();
+        bool IsReadonly { get; }
+        bool IsSynced { get; }
+        void DeclareAsSyncedNode();
     }
 
     public class ServerConfiguration : IServerConfiguration
     {
         public bool IsMaster { get { return Nodes.Self.IsMaster; } }
-        public bool IsSynced { get { return Nodes.Self.IsSynced; } }
-        public bool IsReadonly { get { return Nodes.Self.IsReadonly; } }
-        public byte ServerId { get; set; }
         public string InternalAddress { get { return Nodes.Self.InternalAddress; } }
         public string PublicAddress { get { return Nodes.Self.PublicAddress; } }
-        public bool IsSyncing { get; set; }
+        public byte ServerId { get; set; }
+        public void EnterReadonlyMode()
+        {
+            IsReadonly = true;
+        }
+        public void ExitReadonlyMode()
+        {
+            IsReadonly = false;
+        }
+        public bool IsReadonly { get; set; }
+        public bool IsSynced { get; set; }
+        public void DeclareAsSyncedNode()
+        {
+            if (IsSynced)
+                throw new InvalidOperationException("Cannot declare already synced node as synced");
+            IsSynced = true;
+        }
         public int PingTimeout { get { return 10000; } }
         public INodeCollection Nodes { get; set; }
     }
@@ -50,8 +64,6 @@ namespace FloatingQueue.Server.Core
         public string PublicAddress { get; set; }
         public IInternalQueueServiceProxy Proxy { get; set; } //todo MM: make private set (currently public set is only for tests)
         public bool IsMaster { get; set; }
-        public bool IsSynced { get; set; }
-        public bool IsReadonly { get; set; }
         public bool IsSelf { get; set; }
         public byte ServerId { get; set; }
         public void CreateProxy()
@@ -61,19 +73,9 @@ namespace FloatingQueue.Server.Core
         }
         public void DeclareAsNewMaster()
         {
-            if (!IsSynced)
-                throw new InvalidOperationException("A node who's in synchronization state cannot declare itself as New Master");
             if (IsMaster)
                 throw new InvalidOperationException("A node who's already a Master cannot declare itself as New Master");
             IsMaster = true;
-        }
-        public void DeclareAsSyncedNode()
-        {
-            if (IsSynced)
-                throw new InvalidOperationException("Already synced node cannot declare itself as Synced");
-            if (IsMaster)
-                throw new InvalidOperationException("Master node cannot declare itself as Synced");
-            IsSynced = true;
         }
 
         public bool Equals(NodeConfiguration other)

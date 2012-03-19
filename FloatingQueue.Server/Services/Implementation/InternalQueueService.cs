@@ -16,32 +16,32 @@ namespace FloatingQueue.Server.Services.Implementation
             return 0;
         }
 
-        public void IntroduceNewNode(NodeInfo nodeInfo)
+        public void IntroduceNewNode(ExtendedNodeInfo nodeInfo)
         {
-            Core.Server.Log.Info("New node introduced in system(still not synchronized). Id = {0}, address = {1}",
-                nodeInfo.ServerId, nodeInfo.Address);
+            if (nodeInfo.IsMaster)
+                throw new InvalidOperationException("New node cannot be introduced as Master");
 
-            var newNode = new NodeConfiguration
-            {
-                InternalAddress = nodeInfo.Address,
-                ServerId = nodeInfo.ServerId,
-                IsSynced = false,
-                IsMaster = false,
-                IsReadonly = false
-            };
+            Core.Server.Log.Info("New node introduced in system. Id = {0}, internal address = {1}",
+                nodeInfo.ServerId, nodeInfo.InternalAddress);
 
+            var newNode = ProxyHelper.TranslateNodeInfo(nodeInfo);
             Core.Server.Configuration.Nodes.AddNewNode(newNode);
+
+            ProxyHelper.EnsureNodesConfigurationIsValid();
+
             newNode.CreateProxy();
             newNode.Proxy.Open();
         }
 
-        public void RequestSynchronization(int serverId, IDictionary<string, int> aggregateVersions)
+        public void RequestSynchronization(ExtendedNodeInfo nodeInfo, Dictionary<string, int> aggregateVersions)
         {
-            Core.Server.Log.Info("Request for synchronization arrived from server no {0}", serverId);
-            Core.Server.Resolve<INodeSynchronizer>().StartBackgroundSync(serverId, aggregateVersions);
+            Core.Server.Log.Info("Request for synchronization arrived from {0}", nodeInfo.InternalAddress);
+            
+            var sync = Core.Server.Resolve<INodeSynchronizer>();
+            sync.StartBackgroundSync(nodeInfo, aggregateVersions);
         }
 
-        public void ReceiveAggregateEvents(string aggregateId, int version, IEnumerable<object> events)
+        public void ReceiveSingleAggregate(string aggregateId, int version, IEnumerable<object> events)
         {
             Core.Server.Log.Info("Receiving aggregate events. AggregateId = {0}, version = {1}",
                 aggregateId, version);
@@ -53,35 +53,40 @@ namespace FloatingQueue.Server.Services.Implementation
             aggregate.PushMany(version, events);
         }
 
-        public void NotificateAllAggregatesSent(IDictionary<string, int> writtenAggregatesVersions)
+        public bool NotificateSynchronizationFinished(Dictionary<string, int> writtenAggregatesVersions)
         {
-            Core.Server.Log.Info("All aggregates received. Merging sync writes and switching to Synced mode");
+            if (Core.Server.Configuration.IsSynced)
+                throw new InvalidOperationException("Notification about finish of synchronization shouldn't come to synchronized node.");
 
             //todo MM: identify server, which we requested for sync and check if this notification came from him
+            Core.Server.Log.Info("Synchronization has finished. Exiting readonly mode");
 
-            Core.Server.Resolve<INodeSynchronizer>().EnsureAggregatesAreCompatible(writtenAggregatesVersions);
-
-            // TODO MM CRITICAL: merge copied aggregates with writed to temporary collection
-
-            Core.Server.Configuration.IsSyncing = false;
-
-            foreach (var node in Core.Server.Configuration.Nodes.Siblings)
+            var currentVersions = AggregateRepository.Instance.GetLastVersions();
+            if (!currentVersions.AreEqualToVersions(writtenAggregatesVersions))
             {
-                node.Proxy.NotificateNodeIsSynchronized(ProxyHelper.CurrentServerId);
+                Core.Server.Log.Warn("Incoming versions don't match current versions.");
+                return false;
             }
 
-            Core.Server.Configuration.Nodes.Self.DeclareAsSyncedNode();
+            Core.Server.Configuration.DeclareAsSyncedNode();
+            Core.Server.Configuration.ExitReadonlyMode();
+            Core.Server.Resolve<INodeInitializer>().CollectClusterMetadata(
+                Core.Server.Configuration.Nodes.Siblings.Select(n => n.InternalAddress));
+            Core.Server.Resolve<IConnectionManager>().OpenOutcomingConnections();
 
-            Core.Server.Log.Info("All nodes are notified about finish of My synchronization process");
+            return true;
         }
 
-        public void NotificateNodeIsSynchronized(int serverId)
+        public List<ExtendedNodeInfo> GetExtendedMetadata()
         {
-            Core.Server.Log.Info("Node no {0} has synchronized with other nodes", serverId);
-
-            Core.Server.Configuration.Nodes.Siblings
-                       .Single(n => n.ServerId == serverId)
-                       .DeclareAsSyncedNode();
+            var metadata = Core.Server.Configuration.Nodes.All.Select(n => new ExtendedNodeInfo
+            {
+                InternalAddress = n.InternalAddress,
+                PublicAddress = n.PublicAddress,
+                ServerId = n.ServerId,
+                IsMaster = n.IsMaster
+            }).ToList();
+            return metadata;
         }
     }
 }

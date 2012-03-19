@@ -29,8 +29,6 @@ namespace FloatingQueue.Server.TCP
                 return IntroduceNewNode(service, request, response);
             if (request.Command == "RequestSynchronization".GetHashCode())
                     return RequestSynchronization(service, request, response);
-            if (request.Command == "NotificateNodeIsSynchronized".GetHashCode())
-                    return NotificateNodeIsSynchronized(service, request, response);
             if (request.Command == "ReceiveAggregateEvents".GetHashCode())
                     return ReceiveAggregateEvents(service, request, response);
             if (request.Command == "NotificateAllAggregatesSent".GetHashCode())
@@ -48,11 +46,12 @@ namespace FloatingQueue.Server.TCP
             return true;
         }
 
-        private static NodeInfo ReadNodeInfo(TCPBinaryReader request)
+        private static ExtendedNodeInfo ReadNodeInfo(TCPBinaryReader request)
         {
-            var result = new NodeInfo 
+            throw new NotImplementedException("ExtendedNodeInfo has new fields");
+            var result = new ExtendedNodeInfo 
             {
-                Address = request.ReadString(), 
+                //Address = request.ReadString(), 
                 ServerId = (byte) request.ReadInt32()
             };
             return result;
@@ -69,6 +68,7 @@ namespace FloatingQueue.Server.TCP
         //void RequestSynchronization(int serverId, IDictionary<string, int> currentAggregateVersions)
         protected bool RequestSynchronization(IInternalQueueService service, TCPBinaryReader request, TCPBinaryWriter response)
         {
+            throw new NotImplementedException("RequestSynchronization has new signature");
             var serverId = request.ReadInt32();
             var count = request.ReadInt32();
             var dic = new Dictionary<string, int>(count);
@@ -78,16 +78,7 @@ namespace FloatingQueue.Server.TCP
                 var value = request.ReadInt32();
                 dic.Add(key, value);
             }
-            service.RequestSynchronization(serverId, dic);
-            return true;
-        }
-
-
-        //void NotificateNodeIsSynchronized(int serverId)
-        protected bool NotificateNodeIsSynchronized(IInternalQueueService service, TCPBinaryReader request, TCPBinaryWriter response)
-        {
-            var serverId = request.ReadInt32();
-            service.NotificateNodeIsSynchronized(serverId);
+           // service.RequestSynchronization(serverId, dic);
             return true;
         }
 
@@ -103,7 +94,7 @@ namespace FloatingQueue.Server.TCP
                 var obj = request.ReadObject();
                 dic.Add(obj);
             }
-            service.ReceiveAggregateEvents(aggId, version, dic);
+            service.ReceiveSingleAggregate(aggId, version, dic);
             return true;
             
         }
@@ -119,7 +110,7 @@ namespace FloatingQueue.Server.TCP
                 var value = request.ReadInt32();
                 dic.Add(key, value);
             }
-            service.NotificateAllAggregatesSent(dic);
+            service.NotificateSynchronizationFinished(dic);
             return true;
         }
 

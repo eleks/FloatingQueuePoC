@@ -16,7 +16,7 @@ namespace FloatingQueue.Common.Proxy.QueueServiceProxy
         public event ClientCallFailedHandler OnClientCallFailed;
         public event ConnectionLostHandler OnConnectionLost;
 
-        private List<Node> m_Nodes;
+        private List<NodeInfo> m_Nodes;
         private bool m_KeepConnectionOpened;
         private bool m_CancelFireClientCall;
         private bool m_Initialized;
@@ -112,7 +112,7 @@ namespace FloatingQueue.Common.Proxy.QueueServiceProxy
         private void HandleClientCallFailed()
         {
             bool success = false;
-            List<Node> newNodes = null;
+            List<NodeInfo> newNodes = null;
             string newAddress = string.Empty;
 
             m_CancelFireClientCall = true;
@@ -144,7 +144,6 @@ namespace FloatingQueue.Common.Proxy.QueueServiceProxy
                 success = true;
                 break;
             }
-
 
             m_CancelFireClientCall = false;
 

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.ServiceModel;
 using FloatingQueue.Common.Proxy;
 using FloatingQueue.Server.Exceptions;
@@ -16,10 +17,11 @@ namespace FloatingQueue.Server.Services.Proxy
 
         #region Standard Queue Service Functionality
 
-        //note MM: multiple inheritance would be useful here
-
         public void Push(string aggregateId, int version, object e)
         {
+            if (!Core.Server.Configuration.IsMaster)
+                throw new BusinessLogicException("Only Master can initiate push to other nodes");
+
             Client.Push(aggregateId, version, e);
         }
 
@@ -64,50 +66,42 @@ namespace FloatingQueue.Server.Services.Proxy
             }
         }
 
-        public void IntroduceNewNode(NodeInfo nodeInfo)
+        public void IntroduceNewNode(ExtendedNodeInfo nodeInfo)
         {
-            if (Core.Server.Configuration.IsSynced)
-                throw new BusinessLogicException("Only Unsynced Node can introduce herself to others as a new node");
+            if (!Core.Server.Configuration.IsMaster)
+                throw new BusinessLogicException("Only Master can introduce new node to others");
 
             Client.IntroduceNewNode(nodeInfo);
         }
 
-        public void RequestSynchronization(int serverId, IDictionary<string, int> aggregateVersions)
+        public void RequestSynchronization(ExtendedNodeInfo nodeInfo, Dictionary<string, int> aggregateVersions)
         {
             if (Core.Server.Configuration.IsSynced)
                 throw new BusinessLogicException("Request for synchronization can be initiated only by Unsynced Node");
 
-            Core.Server.Configuration.IsSyncing = true;
-            Client.RequestSynchronization(serverId, aggregateVersions);
+            Client.RequestSynchronization(nodeInfo, aggregateVersions);
         }
 
-        public void NotificateNodeIsSynchronized(int serverId)
+        public void ReceiveSingleAggregate(string aggregateId, int version, IEnumerable<object> events)
         {
-            if (Core.Server.Configuration.IsSyncing)
-                throw new BusinessLogicException("If node is still syncing she can't notify otehr nodes that she's already synced");
+            if (!Core.Server.Configuration.IsMaster)
+                throw new BusinessLogicException("Only Master can push all aggregate events");
 
-            if (Core.Server.Configuration.IsSynced)
-                throw new BusinessLogicException("Only Unsynced Node can notificate siblings that she's synchronized");
-
-            Client.NotificateNodeIsSynchronized(serverId);
+            Client.ReceiveSingleAggregate(aggregateId, version, events);
         }
 
-        public void ReceiveAggregateEvents(string aggregateId, int version, IEnumerable<object> events)
+        public bool NotificateSynchronizationFinished(Dictionary<string, int> writtenAggregatesVersions)
         {
-            if (!Core.Server.Configuration.IsSynced)
-                throw new BusinessLogicException("Only Synced Node can push all aggregate events");
+            if (!Core.Server.Configuration.IsMaster)
+                throw new BusinessLogicException("Only Master can notificate about aggregates sending completion");
 
-            Client.ReceiveAggregateEvents(aggregateId, version, events);
+            return Client.NotificateSynchronizationFinished(writtenAggregatesVersions);
         }
 
-        public void NotificateAllAggregatesSent(IDictionary<string, int> writtenAggregatesVersions)
+        public List<ExtendedNodeInfo> GetExtendedMetadata()
         {
-            if (!Core.Server.Configuration.IsSynced)
-                throw new BusinessLogicException("Only Synced Node can notificate about aggregates sending completeness");
-
-            Client.NotificateAllAggregatesSent(writtenAggregatesVersions);
+            return Client.GetExtendedMetadata();
         }
-
 
         #endregion
 

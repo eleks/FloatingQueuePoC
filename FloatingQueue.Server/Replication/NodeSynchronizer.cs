@@ -1,112 +1,130 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
+using System.Text;
 using System.Threading.Tasks;
 using FloatingQueue.Server.EventsLogic;
 using FloatingQueue.Server.Exceptions;
 using FloatingQueue.Server.Services;
+using FloatingQueue.Server.Services.Implementation;
 using FloatingQueue.Server.Services.Proxy;
 
 namespace FloatingQueue.Server.Replication
 {
     public interface INodeSynchronizer
     {
-        void Init();
-        void StartBackgroundSync(int serverId, IDictionary<string, int> aggregateVersions);
-        void EnsureAggregatesAreCompatible(IDictionary<string, int> aggregateVersions);
+        void StartBackgroundSync(ExtendedNodeInfo nodeInfo, Dictionary<string, int> aggregateVersions);
     }
 
     public class NodeSynchronizer : INodeSynchronizer
     {
-        public void Init()
+        public void StartBackgroundSync(ExtendedNodeInfo nodeInfo, Dictionary<string, int> aggregateVersions)
         {
-            if (!Core.Server.Configuration.IsSynced)
-            {
-                Core.Server.Resolve<IConnectionManager>().OpenOutcomingConnections();
-
-                // tell everyone that i'm new node in cluster,
-                foreach (var node in Core.Server.Configuration.Nodes.Siblings)
-                {
-                    node.Proxy.IntroduceNewNode(ProxyHelper.CurrentNodeInfo);
-                    // todo: do something if connection failed?
-                }
-
-                // ask master for all the data
-                Core.Server.Configuration.Nodes.Master.Proxy
-                    .RequestSynchronization(ProxyHelper.CurrentServerId, ProxyHelper.CurrentAggregateVersions);
-            }
-        }
-
-        private void ValidateSyncRequest(int serverId)
-        {
-            var requester = Core.Server.Configuration.Nodes.Siblings.
-                    Single(n => n.ServerId == serverId);
-
-            if (requester.IsSynced)
-                throw new ApplicationException("Only Unsynced Node can request synchronization");
-
-            if (!Core.Server.Configuration.IsSynced)
-                throw new ApplicationException("Only Synced Node can reply to synchronization request");
-        }
-
-        public void StartBackgroundSync(int serverId, IDictionary<string, int> aggregateVersions)
-        {
-            ValidateSyncRequest(serverId);
-
             //todo: pushing each aggregate in separate thread would enhance performance
             //todo: ensure single background task
+            //note: if update speed is to big, an epsilon can be taken
             Task.Factory.StartNew(() =>
             {
-                var aggregateIds = AggregateRepository.Instance.GetAllIds();
-                var requester = Core.Server.Configuration.Nodes.Siblings.Single(n => n.ServerId == serverId);
-                var versionsSnapshot = AggregateRepository.Instance.GetLastVersions();
-                var writtenAggregatesVersions = new Dictionary<string, int>();
+                Dictionary<string, int> writtenVersions = aggregateVersions,
+                                        currentVersions = AggregateRepository.Instance.GetLastVersions();
 
-                foreach (var aggregateId in aggregateIds)
+                var requester = new InternalQueueServiceProxy(nodeInfo.InternalAddress);
+                try
                 {
-                    int unsyncedNodeLastVersion, localNodeLastVersion, snapshotVersion;
-                    IEventAggregate aggregate;
-
-                    if (!AggregateRepository.Instance.TryGetEventAggregate(aggregateId, out aggregate))
-                        throw new CriticalException("If there's an aggregate id, there must be an aggregate");
-
-                    if (!versionsSnapshot.TryGetValue(aggregateId, out snapshotVersion))
-                        throw new CriticalException("All aggregates, created after start of sync, must be handled by replication mechanism");
-
-                    if (!aggregateVersions.TryGetValue(aggregateId, out unsyncedNodeLastVersion))
-                        unsyncedNodeLastVersion = -1;
-
-                    localNodeLastVersion = aggregate.LastVersion;
-                    if (unsyncedNodeLastVersion > localNodeLastVersion)
-                        throw new CriticalException("Fatal desynchronization issue came up - unsynced node last version is bigger than local(synced) node last version");
-
-                    var events = aggregate.GetRange(unsyncedNodeLastVersion + 1, snapshotVersion - (unsyncedNodeLastVersion + 1));
-
-                    requester.Proxy.ReceiveAggregateEvents(aggregateId, unsyncedNodeLastVersion, events);
-                    writtenAggregatesVersions[aggregateId] = snapshotVersion;
+                    requester.Open();
+                    while (!writtenVersions.AreEqualToVersions(currentVersions))
+                    {
+                        writtenVersions = DoSync(requester, aggregateVersions);
+                        currentVersions = AggregateRepository.Instance.GetLastVersions();
+                    }
+                }
+                finally
+                {
+                    requester.Close();
                 }
 
-                requester.Proxy.NotificateAllAggregatesSent(writtenAggregatesVersions);
+                OnSynchronizationFinished(nodeInfo, writtenVersions);
             });
         }
 
-        public void EnsureAggregatesAreCompatible(IDictionary<string, int> incomingVersions)
+        private void OnSynchronizationFinished(ExtendedNodeInfo nodeInfo, Dictionary<string, int> writtenVersions)
         {
-            var currentVersions = AggregateRepository.Instance.GetLastVersions();
+            // todo: wrap this into transaction
 
+            Core.Server.Log.Info("Sync with {0} almost finished. Switching to readonly mode", nodeInfo.InternalAddress);
+            Core.Server.Configuration.EnterReadonlyMode();
+
+            var syncedNode = ProxyHelper.TranslateNodeInfo(nodeInfo);
+                syncedNode.CreateProxy();
+
+            // handle last updates
+            var currentVersions = AggregateRepository.Instance.GetLastVersions();
+            if (!writtenVersions.AreEqualToVersions(currentVersions))
+                writtenVersions = DoSync(syncedNode.Proxy, currentVersions);
+
+            // introduce newbie to everyone, including myself
+            foreach (var node in Core.Server.Configuration.Nodes.Siblings)
+                node.Proxy.IntroduceNewNode(nodeInfo);
+            Core.Server.Configuration.Nodes.AddNewNode(syncedNode);
+            syncedNode.Proxy.Open();
+
+            ProxyHelper.EnsureNodesConfigurationIsValid();
+
+            // notify requester 
+            if (!syncedNode.Proxy.NotificateSynchronizationFinished(writtenVersions))
+                throw new ApplicationException("Synced node version didn't match current version, after all the sync process");
+
+            Core.Server.Configuration.ExitReadonlyMode();
+            Core.Server.Log.Info("Sync with {0} has finished successfully. Exiting readonly mode", nodeInfo.InternalAddress);
+        }
+
+        private Dictionary<string, int> DoSync(IInternalQueueServiceProxy proxy, IDictionary<string, int> unsyncedNodeVersions)
+        {
+            var aggregateIds = AggregateRepository.Instance.GetAllIds();
+            var writtenAggregatesVersions = new Dictionary<string, int>();
+
+            foreach (var aggregateId in aggregateIds)
+            {
+                int unsyncedNodeLastVersion, localNodeLastVersion;
+                IEventAggregate aggregate;
+
+                if (!AggregateRepository.Instance.TryGetEventAggregate(aggregateId, out aggregate))
+                    throw new CriticalException("If there's an aggregate id, there must be an aggregate");
+
+                if (!unsyncedNodeVersions.TryGetValue(aggregateId, out unsyncedNodeLastVersion))
+                    unsyncedNodeLastVersion = -1;
+
+                localNodeLastVersion = aggregate.LastVersion;
+                if (unsyncedNodeLastVersion > localNodeLastVersion)
+                    throw new CriticalException("Fatal desynchronization issue came up - unsynced node last version is bigger than local(synced) node last version");
+
+                var events = aggregate.GetAllNext(unsyncedNodeLastVersion + 1);
+                proxy.ReceiveSingleAggregate(aggregateId, unsyncedNodeLastVersion, events);
+
+                writtenAggregatesVersions[aggregateId] = localNodeLastVersion;
+            }
+            return writtenAggregatesVersions;
+        }
+    }
+
+    public static class SyncHelper
+    {
+        public static bool AreEqualToVersions(this IDictionary<string, int> currentVersions, IDictionary<string, int> incomingVersions)
+        {
             if (incomingVersions.Count != currentVersions.Count)
-                throw new IncompatibleDataException("Aggregate numbers don't match");
+                return false; // throw new IncompatibleDataException("Aggregate numbers don't match");
 
             foreach (KeyValuePair<string, int> kvp in currentVersions)
             {
                 int incomingValue;
                 if (!incomingVersions.TryGetValue(kvp.Key, out incomingValue))
-                    throw new IncompatibleDataException("Missing aggregate in incomingAggregates");
+                    return false; // throw new IncompatibleDataException("Missing aggregate in incomingAggregates");
                 if (kvp.Value != incomingValue)
-                    throw new IncompatibleDataException("Versions don't match");
+                    return false; // throw new IncompatibleDataException("Versions don't match");
             }
 
+            return true;
         }
     }
+
 }

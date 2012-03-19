@@ -10,7 +10,6 @@ namespace FloatingQueue.Server.Replication
     {
         ReadOnlyCollection<INodeConfiguration> All { get; }
         ReadOnlyCollection<INodeConfiguration> Siblings { get; }
-        ReadOnlyCollection<INodeConfiguration> SyncedSiblings { get; }
         INodeConfiguration Self { get; }
         INodeConfiguration Master { get; }
         void RemoveDeadNode(int nodeId);
@@ -26,15 +25,15 @@ namespace FloatingQueue.Server.Replication
 
         public NodeCollection(List<INodeConfiguration> nodes)
         {
-            if(nodes == null)
+            if (nodes == null)
             {
                 throw new ArgumentNullException("nodes");
             }
-            if(nodes.Count() == 0)
+            if (nodes.Count() == 0)
             {
                 throw new ArgumentException("nodes must contain at least 1 node");
             }
-            if(nodes.Distinct().Count() != nodes.Count())
+            if (nodes.Distinct().Count() != nodes.Count())
             {
                 throw new ArgumentException("nodes contains duplicated ID");
             }
@@ -67,17 +66,6 @@ namespace FloatingQueue.Server.Replication
             }
         }
 
-        public ReadOnlyCollection<INodeConfiguration> SyncedSiblings
-        {
-            get
-            {
-                lock (m_SyncRoot)
-                {
-                    return LiveProxies.Where(n => n.IsSynced && n.ServerId != Core.Server.Configuration.ServerId).ToList().AsReadOnly();
-                }
-            }
-        }
-
         public INodeConfiguration Self
         {
             get
@@ -85,7 +73,7 @@ namespace FloatingQueue.Server.Replication
                 lock (m_SyncRoot)
                 {
                     var self = LiveProxies.SingleOrDefault(n => n.ServerId == Core.Server.Configuration.ServerId);
-                    if(self != null)
+                    if (self != null)
                     {
                         return self;
                     }
@@ -115,18 +103,22 @@ namespace FloatingQueue.Server.Replication
 
         public void AddNewNode(INodeConfiguration slave)
         {
-            if(slave == null)
+            if (slave == null)
             {
                 throw new ArgumentNullException("slave");
             }
-            if(slave.IsMaster)
-            {
-                throw new ArgumentException("Cannot add master node directly");
-            }
-            if(m_Nodes.Contains(slave))
+            if (m_Nodes.Contains(slave))
             {
                 throw new ArgumentException("cannot add node. Server ID already exists");
             }
+            lock (m_SyncRoot)
+            {
+                if (slave.IsMaster && m_Nodes.Any(n => n.IsMaster))
+                {
+                    throw new ArgumentException("Cannot add second master node");
+                }
+            }
+
 
             RemoveDeadNodes();
             lock (m_SyncRoot)
@@ -142,7 +134,7 @@ namespace FloatingQueue.Server.Replication
             lock (m_SyncRoot)
             {
                 var node = m_Nodes.SingleOrDefault(p => p.ServerId == nodeId);
-                if(node != null)
+                if (node != null)
                 {
                     var index = m_Nodes.IndexOf(node);
                     node.Proxy.Close();

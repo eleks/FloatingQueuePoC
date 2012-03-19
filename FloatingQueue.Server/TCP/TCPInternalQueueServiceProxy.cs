@@ -19,23 +19,25 @@ namespace FloatingQueue.Server.TCP
             return res;
         }
 
-        private static void WriteNodeInfo(TCPBinaryWriter req, NodeInfo nodeInfo)
+        private static void WriteNodeInfo(TCPBinaryWriter req, ExtendedNodeInfo nodeInfo)
         {
-            req.Write(nodeInfo.Address);
+            throw new NotImplementedException("ExtendedNodeInfo has new fields");
+            //req.Write(nodeInfo.Address);
             req.Write((int)nodeInfo.ServerId);
         }
 
-        public void IntroduceNewNode(NodeInfo nodeInfo)
+        public void IntroduceNewNode(ExtendedNodeInfo nodeInfo)
         {
             var req = CreateRequest("IntroduceNewNode");
             WriteNodeInfo(req, nodeInfo);
             SendReceive(req);
         }
 
-        public void RequestSynchronization(int serverId, IDictionary<string, int> currentAggregateVersions)
+        public void RequestSynchronization(ExtendedNodeInfo nodeInfo, Dictionary<string, int> currentAggregateVersions)
         {
+            throw new NotImplementedException("RequestSynchronization has new signature(return type=bool)");
             var req = CreateRequest("RequestSynchronization");
-            req.Write(serverId);
+            //req.Write(nodeInfo);
             req.Write(currentAggregateVersions.Count);
             foreach (var pair in currentAggregateVersions)
             {
@@ -52,7 +54,7 @@ namespace FloatingQueue.Server.TCP
             SendReceive(req);
         }
 
-        public void ReceiveAggregateEvents(string aggregateId, int version, IEnumerable<object> events)
+        public void ReceiveSingleAggregate(string aggregateId, int version, IEnumerable<object> events)
         {
             var req = CreateRequest("ReceiveAggregateEvents");
             req.Write(aggregateId);
@@ -66,7 +68,7 @@ namespace FloatingQueue.Server.TCP
             SendReceive(req);
         }
 
-        public void NotificateAllAggregatesSent(IDictionary<string, int> writtenAggregatesVersions)
+        public bool NotificateSynchronizationFinished(Dictionary<string, int> writtenAggregatesVersions)
         {
             var req = CreateRequest("NotificateAllAggregatesSent");
             req.Write(writtenAggregatesVersions.Count);
@@ -76,6 +78,12 @@ namespace FloatingQueue.Server.TCP
                 req.Write(pair.Value);
             }
             SendReceive(req);
+            return true;
+        }
+
+        public List<ExtendedNodeInfo> GetExtendedMetadata()
+        {
+            throw new NotImplementedException();
         }
 
 

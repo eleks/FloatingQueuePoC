@@ -2,30 +2,37 @@
 using System.Runtime.Serialization;
 using System.ServiceModel;
 using FloatingQueue.Common;
+using FloatingQueue.Server.Core;
 
 namespace FloatingQueue.Server.Services
 {
     [ServiceContract]
-    public interface IInternalQueueService: IQueueService
+    public interface IInternalQueueService : IQueueService
     {
         [OperationContract]
         int Ping();
         [OperationContract]
-        void IntroduceNewNode(NodeInfo nodeInfo);
+        void IntroduceNewNode(ExtendedNodeInfo nodeInfo);
         [OperationContract]
-        void RequestSynchronization(int serverId, IDictionary<string, int> currentAggregateVersions);
+        void RequestSynchronization(ExtendedNodeInfo nodeInfo, Dictionary<string, int> currentAggregateVersions);
         [OperationContract]
-        void NotificateNodeIsSynchronized(int serverId);
+        void ReceiveSingleAggregate(string aggregateId, int version, IEnumerable<object> events);
         [OperationContract]
-        void ReceiveAggregateEvents(string aggregateId, int version, IEnumerable<object> events);
+        bool NotificateSynchronizationFinished(Dictionary<string, int> writtenAggregatesVersions);
         [OperationContract]
-        void NotificateAllAggregatesSent(IDictionary<string, int> writtenAggregatesVersions);
+        List<ExtendedNodeInfo> GetExtendedMetadata();
     }
 
     [DataContract]
-    public class NodeInfo
+    public class ExtendedNodeInfo
     {
-        [DataMember] public string Address;
-        [DataMember] public byte ServerId;
+        [DataMember]
+        public string InternalAddress;
+        [DataMember]
+        public string PublicAddress;
+        [DataMember]
+        public byte ServerId;
+        [DataMember]
+        public bool IsMaster;
     }
 }

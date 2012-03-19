@@ -27,8 +27,6 @@ namespace FloatingQueue.Server.Tests
             var nodeMock = new Mock<INodeConfiguration>();
             nodeMock.SetupGet(m => m.InternalAddress).Returns(address);
             nodeMock.SetupGet(m => m.IsMaster).Returns(isMaster);
-            nodeMock.SetupGet(m => m.IsSynced).Returns(isSynced);
-            nodeMock.SetupGet(m => m.IsReadonly).Returns(isReadonly);
 
             var collectionMock = new Mock<INodeCollection>();
             collectionMock.SetupGet(m => m.Self).Returns(nodeMock.Object);
@@ -52,7 +50,6 @@ namespace FloatingQueue.Server.Tests
         public void NodeConfiguration_DeclareAsNewMaster_AlreadyMaster_Test()
         {
             var nodeConfiguration = new NodeConfiguration();
-            nodeConfiguration.DeclareAsSyncedNode();
             nodeConfiguration.DeclareAsNewMaster();
             nodeConfiguration.DeclareAsNewMaster();
         }
@@ -61,7 +58,6 @@ namespace FloatingQueue.Server.Tests
         public void NodeConfiguration_DeclareAsNewMaster_Success_Test()
         {
             var nodeConfiguration = new NodeConfiguration();
-            nodeConfiguration.DeclareAsSyncedNode();
             nodeConfiguration.DeclareAsNewMaster();
             Assert.IsTrue(nodeConfiguration.IsMaster);
         }
@@ -69,27 +65,28 @@ namespace FloatingQueue.Server.Tests
         [Test, ExpectedException(typeof(InvalidOperationException))]
         public void NodeConfiguration_DeclareAsSynced_AlreadySynced_Test()
         {
-            var nodeConfiguration = new NodeConfiguration();
-            nodeConfiguration.DeclareAsSyncedNode();
-            nodeConfiguration.DeclareAsSyncedNode();
+            var serverConfiguration = new ServerConfiguration();
+            serverConfiguration.DeclareAsSyncedNode();
+            serverConfiguration.DeclareAsSyncedNode();
         }
 
-        [Test, ExpectedException(typeof(InvalidOperationException))]
-        public void NodeConfiguration_DeclareAsSynced_AlreadyMaster_Test()
-        {
-            var nodeConfiguration = new NodeConfiguration();
-            nodeConfiguration.DeclareAsSyncedNode();
-            nodeConfiguration.DeclareAsNewMaster();
-            nodeConfiguration.IsSynced = false;
-            nodeConfiguration.DeclareAsSyncedNode();
-        }
+        //note MM: looks like this test doesn't make sense anymore
+        //[Test, ExpectedException(typeof(InvalidOperationException))]
+        //public void NodeConfiguration_DeclareAsSynced_AlreadyMaster_Test()
+        //{
+        //    var nodeConfiguration = new NodeConfiguration();
+        //    nodeConfiguration.DeclareAsSyncedNode();
+        //    nodeConfiguration.DeclareAsNewMaster();
+        //    nodeConfiguration.IsSynced = false;
+        //    nodeConfiguration.DeclareAsSyncedNode();
+        //}
 
         [Test]
         public void NodeConfiguration_DeclareAsSynced_Success_Test()
         {
-            var nodeConfiguration = new NodeConfiguration();
-            nodeConfiguration.DeclareAsSyncedNode();
-            Assert.IsTrue(nodeConfiguration.IsSynced);
+            var serverConfiguration = new ServerConfiguration();
+            serverConfiguration.DeclareAsSyncedNode();
+            Assert.IsTrue(serverConfiguration.IsSynced);
         }
 
         [Test]
