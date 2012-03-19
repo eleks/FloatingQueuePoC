@@ -8,35 +8,24 @@ using FloatingQueue.Server.Services.Implementation;
 
 namespace FloatingQueue.Server.TCP
 {
-    public class TCPInternalQueueService : TCPPublicQueueService
+    public class TCPInternalQueueService : TCPPublicQueueServiceBase<IInternalQueueService>
     {
-        public override bool Dispatch(TCPBinaryReader request, TCPBinaryWriter response)
+        protected override void InitializeDispatcher()
         {
-            var service = new InternalQueueService();
-            if (DoPublicQueueServiceDispatch(service, request, response))
-                return true;
-            if (DoInternalQueueServiceDispatch(service, request, response))
-                return true;
-            return false;
+            base.InitializeDispatcher();
+
+            AddDispatcher("Ping", Ping);
+            AddDispatcher("IntroduceNewNode", IntroduceNewNode);
+            AddDispatcher("RequestSynchronization", RequestSynchronization);
+            AddDispatcher("NotificateNodeIsSynchronized", NotificateNodeIsSynchronized);
+            AddDispatcher("ReceiveAggregateEvents", ReceiveAggregateEvents);
+            AddDispatcher("NotificateAllAggregatesSent", NotificateAllAggregatesSent);
         }
 
-
-        private bool DoInternalQueueServiceDispatch(IInternalQueueService service, TCPBinaryReader request, TCPBinaryWriter response)
+        protected override IInternalQueueService CreateService()
         {
-            if (request.Command == "Ping".GetHashCode())
-                return Ping(service, request, response);
-            if (request.Command == "IntroduceNewNode".GetHashCode())
-                return IntroduceNewNode(service, request, response);
-            if (request.Command == "RequestSynchronization".GetHashCode())
-                    return RequestSynchronization(service, request, response);
-            if (request.Command == "NotificateNodeIsSynchronized".GetHashCode())
-                    return NotificateNodeIsSynchronized(service, request, response);
-            if (request.Command == "ReceiveAggregateEvents".GetHashCode())
-                    return ReceiveAggregateEvents(service, request, response);
-            if (request.Command == "NotificateAllAggregatesSent".GetHashCode())
-                return NotificateAllAggregatesSent(service, request, response);
-
-            return false;
+            var service = new InternalQueueService();
+            return service;
         }
 
         //int Ping();
