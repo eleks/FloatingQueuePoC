@@ -19,7 +19,7 @@ namespace FloatingQueue.Server.TCP
             AddDispatcher("RequestSynchronization", RequestSynchronization);
             AddDispatcher("ReceiveSingleAggregate", ReceiveSingleAggregate);
             AddDispatcher("NotificateSynchronizationFinished", NotificateSynchronizationFinished);
-            throw new NotImplementedException("A Dispatcher is required for GetExtended Metadata");
+            AddDispatcher("GetExtendedMetadata", GetExtendedMetadata);
         }
 
         protected override IInternalQueueService CreateService()
@@ -37,32 +37,38 @@ namespace FloatingQueue.Server.TCP
             return true;
         }
 
-        private static NodeInfo ReadNodeInfo(TCPBinaryReader request)
+        public static ExtendedNodeInfo ReadNodeInfo(TCPBinaryReader request)
         {
-            throw new NotImplementedException("NodeInfo has new structure");
-            var result = new NodeInfo
+            var result = new ExtendedNodeInfo
             {
-                Address = request.ReadString()
-              //  ServerId = (byte)request.ReadInt32()
+                InternalAddress = request.ReadString(),
+                PublicAddress = request.ReadString(),
+                ServerId = (byte)request.ReadInt32(),
+                IsMaster = request.ReadBoolean()
             };
             return result;
         }
 
-        //void IntroduceNewNode(NodeInfo nodeInfo);
+        public static void WriteNodeInfo(TCPBinaryWriter response, ExtendedNodeInfo nodeInfo)
+        {
+            response.Write(nodeInfo.InternalAddress);
+            response.Write(nodeInfo.PublicAddress);
+            response.Write((int) nodeInfo.ServerId);
+            response.Write(nodeInfo.IsMaster);
+        }
+
+        //void IntroduceNewNode(ExtendedNodeInfo nodeInfo);
         protected bool IntroduceNewNode(IInternalQueueService service, TCPBinaryReader request, TCPBinaryWriter response)
         {
-            throw new NotImplementedException("NodeInfo has new structure");
             var nodeInfo = ReadNodeInfo(request);
-            //service.IntroduceNewNode(nodeInfo);
+            service.IntroduceNewNode(nodeInfo);
             return true;
         }
 
-        //void RequestSynchronization(int serverId, IDictionary<string, int> currentAggregateVersions)
+        //void RequestSynchronization(ExtendedNodeInfo nodeInfo, Dictionary<string, int> currentAggregateVersions);
         protected bool RequestSynchronization(IInternalQueueService service, TCPBinaryReader request, TCPBinaryWriter response)
         {
-            throw new NotImplementedException("RequestSynchronization has new signature");
-
-            var serverId = request.ReadInt32();
+            var nodeInfo = ReadNodeInfo(request);
             var count = request.ReadInt32();
             var dic = new Dictionary<string, int>(count);
             for (int i = 0; i < count; i++)
@@ -71,15 +77,14 @@ namespace FloatingQueue.Server.TCP
                 var value = request.ReadInt32();
                 dic.Add(key, value);
             }
-            //service.RequestSynchronization(serverId, dic);
+            service.RequestSynchronization(nodeInfo, dic);
             return true;
         }
 
 
-        //void ReceiveSingleAggregate(string aggregateId, int version, IEnumerable<object> events) 
+        //void ReceiveSingleAggregate(string aggregateId, int version, IEnumerable<object> events);
         protected bool ReceiveSingleAggregate(IInternalQueueService service, TCPBinaryReader request, TCPBinaryWriter response)
         {
-            throw new NotImplementedException("ReceiveSingleAggregate's signature may have changed");
             var aggId = request.ReadString();
             var version = request.ReadInt32();
             var count = request.ReadInt32();
@@ -92,13 +97,11 @@ namespace FloatingQueue.Server.TCP
 
             service.ReceiveSingleAggregate(aggId, version, dic);
             return true;
-            
         }
 
-        //void NotificateSynchronizationFinished(IDictionary<string, int> writtenAggregatesVersions);
+        //bool NotificateSynchronizationFinished(Dictionary<string, int> writtenAggregatesVersions);
         protected bool NotificateSynchronizationFinished(IInternalQueueService service, TCPBinaryReader request, TCPBinaryWriter response)
         {
-            throw new NotImplementedException("NotificateSynchronizationFinished's signature may have changed");
             var count = request.ReadInt32();
             var dic = new Dictionary<string, int>(count);
             for (int i = 0; i < count; i++)
@@ -107,9 +110,21 @@ namespace FloatingQueue.Server.TCP
                 var value = request.ReadInt32();
                 dic.Add(key, value);
             }
-            service.NotificateSynchronizationFinished(dic);
+            var res = service.NotificateSynchronizationFinished(dic);
+            response.Write(res);
             return true;
         }
 
+        // List<ExtendedNodeInfo> GetExtendedMetadata();
+        protected bool GetExtendedMetadata(IInternalQueueService service, TCPBinaryReader request, TCPBinaryWriter response)
+        {
+            var res = service.GetExtendedMetadata();
+            response.Write(res.Count);
+            for(int i=0; i<res.Count; i++)
+            {
+                WriteNodeInfo(response, res[i]);
+            }
+            return true;
+        }
     }
 }

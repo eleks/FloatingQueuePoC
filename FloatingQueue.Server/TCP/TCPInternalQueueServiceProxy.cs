@@ -19,25 +19,17 @@ namespace FloatingQueue.Server.TCP
             return res;
         }
 
-        private static void WriteNodeInfo(TCPBinaryWriter req, ExtendedNodeInfo nodeInfo)
-        {
-            throw new NotImplementedException("ExtendedNodeInfo has new fields");
-            //req.Write(nodeInfo.Address);
-            req.Write((int)nodeInfo.ServerId);
-        }
-
         public void IntroduceNewNode(ExtendedNodeInfo nodeInfo)
         {
             var req = CreateRequest("IntroduceNewNode");
-            WriteNodeInfo(req, nodeInfo);
+            TCPInternalQueueService.WriteNodeInfo(req, nodeInfo);
             SendReceive(req);
         }
 
         public void RequestSynchronization(ExtendedNodeInfo nodeInfo, Dictionary<string, int> currentAggregateVersions)
         {
-            throw new NotImplementedException("RequestSynchronization has new signature(return type=bool)");
             var req = CreateRequest("RequestSynchronization");
-            //req.Write(nodeInfo);
+            TCPInternalQueueService.WriteNodeInfo(req, nodeInfo);
             req.Write(currentAggregateVersions.Count);
             foreach (var pair in currentAggregateVersions)
             {
@@ -83,22 +75,16 @@ namespace FloatingQueue.Server.TCP
 
         public List<ExtendedNodeInfo> GetExtendedMetadata()
         {
-            throw new NotImplementedException();
+            var req = CreateRequest("GetExtendedMetadata");
+            var res = SendReceive(req);
+            var cnt = res.ReadInt32();
+            var result = new List<ExtendedNodeInfo>(cnt);
+            for(int i=0; i<cnt; i++)
+            {
+                var node = TCPInternalQueueService.ReadNodeInfo(res);
+                result.Add(node);
+            }
+            return result;
         }
-
-
-        //public void RequestSynchronization(NodeInfo nodeInfo)
-        //{
-        //    var req = CreateRequest("RequestSynchronization");
-        //    WriteNodeInfo(req, nodeInfo);
-        //    SendReceive(req);
-        //}
-
-        //public void NotificateSlaveSynchronized(NodeInfo nodeInfo)
-        //{
-        //    var req = CreateRequest("NotificateSlaveSynchronized");
-        //    WriteNodeInfo(req, nodeInfo);
-        //    SendReceive(req);
-        //}
     }
 }
