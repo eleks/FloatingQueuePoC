@@ -30,13 +30,17 @@ namespace FloatingQueue.Server.Replication
             {
                 if (!m_IsConnectionOpened)
                 {
+                    Core.Server.Log.Debug("Opening connections...");
+
                     foreach (var node in Core.Server.Configuration.Nodes.Siblings)
                     {
                         node.Proxy.Open();
-                        Core.Server.Log.Info("Connected to \t{0}", node.InternalAddress);
+                        Core.Server.Log.Info("Connected to {0}", node.InternalAddress);
                     }
                     StartMonitoringConnections();
                     m_IsConnectionOpened = true;
+
+                    Core.Server.Log.Debug("Finished opening connections");
                 }
             }
         }
@@ -112,9 +116,9 @@ namespace FloatingQueue.Server.Replication
                 bool stop = false;
                 while (!stop)
                 {
-                    if (Core.Server.Configuration.Nodes.Siblings.Count == 0)
-                        Core.Server.Log.Info("No other servers to ping...");
-                    else
+                    //if (Core.Server.Configuration.Nodes.Siblings.Count == 0)
+                    //    Core.Server.Log.Info("No other servers to ping...");
+                    //else
                         Core.Server.Log.Debug("Pinging other servers");
                     //lock (m_ConnectionLock)
                     //{

@@ -79,6 +79,8 @@ namespace FloatingQueue.Server.Services.Proxy
             if (Core.Server.Configuration.IsSynced)
                 throw new BusinessLogicException("Request for synchronization can be initiated only by Unsynced Node");
 
+            Core.Server.Log.Info("Requesting synchronization from Master at {0}",this.EndpointAddress.Uri);
+
             Client.RequestSynchronization(nodeInfo, aggregateVersions);
         }
 

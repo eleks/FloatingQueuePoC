@@ -119,7 +119,7 @@ namespace FloatingQueue.Server
         {
             try
             {
-                Core.Server.Log.Info("Press <ENTER> to terminate Host");
+                Core.Server.Log.Info("Press <ENTER> to terminate Host{0}", Environment.NewLine);
                 Console.ReadLine();
 
                 ms_PublicHost.Close();

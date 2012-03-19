@@ -18,6 +18,8 @@ namespace FloatingQueue.Server.Replication
 
     public class NodeSynchronizer : INodeSynchronizer
     {
+        private static readonly object m_SyncRoot = new object();
+
         public void StartBackgroundSync(ExtendedNodeInfo nodeInfo, Dictionary<string, int> aggregateVersions)
         {
             //todo: pushing each aggregate in separate thread would enhance performance
@@ -51,31 +53,43 @@ namespace FloatingQueue.Server.Replication
         {
             // todo: wrap this into transaction
 
-            Core.Server.Log.Info("Sync with {0} almost finished. Switching to readonly mode", nodeInfo.InternalAddress);
-            Core.Server.Configuration.EnterReadonlyMode();
+            lock (m_SyncRoot)
+            {
+                try
+                {
+                    Core.Server.Log.Debug("Sync with {0} almost finished. Switching to readonly mode", nodeInfo.InternalAddress);
+                    Core.Server.Configuration.EnterReadonlyMode();
 
-            var syncedNode = ProxyHelper.TranslateNodeInfo(nodeInfo);
-                syncedNode.CreateProxy();
+                    var syncedNode = ProxyHelper.TranslateNodeInfo(nodeInfo);
+                    syncedNode.CreateProxy(); 
+                    syncedNode.Proxy.Open();
 
-            // handle last updates
-            var currentVersions = AggregateRepository.Instance.GetLastVersions();
-            if (!writtenVersions.AreEqualToVersions(currentVersions))
-                writtenVersions = DoSync(syncedNode.Proxy, currentVersions);
+                    Core.Server.Log.Debug("Handling last updates...");
+                    var currentVersions = AggregateRepository.Instance.GetLastVersions();
+                    if (!writtenVersions.AreEqualToVersions(currentVersions))
+                        writtenVersions = DoSync(syncedNode.Proxy, currentVersions);
 
-            // introduce newbie to everyone, including myself
-            foreach (var node in Core.Server.Configuration.Nodes.Siblings)
-                node.Proxy.IntroduceNewNode(nodeInfo);
-            Core.Server.Configuration.Nodes.AddNewNode(syncedNode);
-            syncedNode.Proxy.Open();
+                    Core.Server.Log.Debug("Introducing {0} to everyone, including myself...",nodeInfo.InternalAddress);
+                    foreach (var node in Core.Server.Configuration.Nodes.Siblings)
+                        node.Proxy.IntroduceNewNode(nodeInfo);
+                    Core.Server.Configuration.Nodes.AddNewNode(syncedNode);
 
-            ProxyHelper.EnsureNodesConfigurationIsValid();
+                    Core.Server.Log.Debug("Checking current configuration...");
+                    ProxyHelper.EnsureNodesConfigurationIsValid();
 
-            // notify requester 
-            if (!syncedNode.Proxy.NotificateSynchronizationFinished(writtenVersions))
-                throw new ApplicationException("Synced node version didn't match current version, after all the sync process");
+                    Core.Server.Log.Debug("Notifying {0} about finish of sync", nodeInfo.InternalAddress);
+                    if (!syncedNode.Proxy.NotificateSynchronizationFinished(writtenVersions))
+                        throw new ApplicationException("Synced node version didn't match current version, after all the sync process");
 
-            Core.Server.Configuration.ExitReadonlyMode();
-            Core.Server.Log.Info("Sync with {0} has finished successfully. Exiting readonly mode", nodeInfo.InternalAddress);
+                    Core.Server.Configuration.ExitReadonlyMode();
+                    Core.Server.Log.Debug("Sync with {0} has finished successfully. Exiting readonly mode", nodeInfo.InternalAddress);
+                }
+                catch (Exception ex)
+                {
+                    Core.Server.Log.Error("Error while finishing sync: {0}{1}{0}{2}", Environment.NewLine, ex.Message, ex.StackTrace);
+                }
+            }
+
         }
 
         private Dictionary<string, int> DoSync(IInternalQueueServiceProxy proxy, IDictionary<string, int> unsyncedNodeVersions)

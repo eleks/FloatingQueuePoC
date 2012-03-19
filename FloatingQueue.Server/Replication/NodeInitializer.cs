@@ -23,6 +23,8 @@ namespace FloatingQueue.Server.Replication
     {
         public void CollectClusterMetadata(IEnumerable<string> nodesAddresses)
         {
+            Core.Server.Log.Debug("Collecting cluster metadata");
+
             if (nodesAddresses == null || nodesAddresses.Count() == 0)
                 throw new BadConfigurationException("There are no addresses to get metadata from");
 
@@ -45,10 +47,15 @@ namespace FloatingQueue.Server.Replication
             {
                 var node = ProxyHelper.TranslateNodeInfo(nodeInfo);
                 if (!Core.Server.Configuration.Nodes.All.Contains(node))
+                {
+                    Core.Server.Log.Debug("Adding {1} at {0} to cluster", node.InternalAddress, nodeInfo.IsMaster ? "Master" : "Slave");
                     Core.Server.Configuration.Nodes.AddNewNode(node);
+                }
             }
 
             ProxyHelper.EnsureNodesConfigurationIsValid();
+
+            Core.Server.Log.Debug("Collecting cluster metadata has finished. Proxies are still not created");
         }
 
         public void StartSynchronization()
@@ -67,6 +74,8 @@ namespace FloatingQueue.Server.Replication
 
         public void CreateProxies()
         {
+            Core.Server.Log.Debug("Creating proxies...");
+
             var siblings = Core.Server.Configuration.Nodes.Siblings;
 
             if (siblings.Count == 0)
@@ -75,14 +84,13 @@ namespace FloatingQueue.Server.Replication
                 return;
             }
 
-            Core.Server.Log.Info("Nodes:");
-            foreach (var node in siblings)
+            foreach (var node in siblings.Where(node => node.Proxy == null))
             {
                 node.CreateProxy();
-                Core.Server.Log.Info("\t{0}, {1}",
-                    node.InternalAddress,
-                    node.IsMaster ? "master" : "slave");
+                Core.Server.Log.Debug("Created proxy for {0}", node.InternalAddress);
             }
+
+            Core.Server.Log.Debug("Finished creating proxies");
         }
 
         public void EnsureNodesConfigurationIsValid(INodeCollection nodes)

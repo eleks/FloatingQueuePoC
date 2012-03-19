@@ -21,9 +21,8 @@ namespace FloatingQueue.Server.Services.Implementation
             if (nodeInfo.IsMaster)
                 throw new InvalidOperationException("New node cannot be introduced as Master");
 
-            Core.Server.Log.Info("New node introduced in system. Id = {0}, internal address = {1}",
-                nodeInfo.ServerId, nodeInfo.InternalAddress);
-
+            Core.Server.Log.Debug("Introducing new node into system... id={0}",nodeInfo.ServerId);
+            
             var newNode = ProxyHelper.TranslateNodeInfo(nodeInfo);
             Core.Server.Configuration.Nodes.AddNewNode(newNode);
 
@@ -31,6 +30,9 @@ namespace FloatingQueue.Server.Services.Implementation
 
             newNode.CreateProxy();
             newNode.Proxy.Open();
+
+            Core.Server.Log.Info("New node introduced in system. Id = {0}, internal address = {1}",
+                nodeInfo.ServerId, nodeInfo.InternalAddress);
         }
 
         public void RequestSynchronization(ExtendedNodeInfo nodeInfo, Dictionary<string, int> aggregateVersions)
@@ -59,7 +61,7 @@ namespace FloatingQueue.Server.Services.Implementation
                 throw new InvalidOperationException("Notification about finish of synchronization shouldn't come to synchronized node.");
 
             //todo MM: identify server, which we requested for sync and check if this notification came from him
-            Core.Server.Log.Info("Synchronization has finished. Exiting readonly mode");
+            Core.Server.Log.Info("Notification about end of sync has come. Making last changes before entering read-write mode");
 
             var currentVersions = AggregateRepository.Instance.GetLastVersions();
             if (!currentVersions.AreEqualToVersions(writtenAggregatesVersions))
@@ -67,12 +69,18 @@ namespace FloatingQueue.Server.Services.Implementation
                 Core.Server.Log.Warn("Incoming versions don't match current versions.");
                 return false;
             }
-
+            Core.Server.Log.Debug("Marking myself as working node(synced and not readonly)");
             Core.Server.Configuration.DeclareAsSyncedNode();
             Core.Server.Configuration.ExitReadonlyMode();
+
+            Core.Server.Log.Debug("Collecting last metadata to check if new nodes were added");
             Core.Server.Resolve<INodeInitializer>().CollectClusterMetadata(
                 Core.Server.Configuration.Nodes.Siblings.Select(n => n.InternalAddress));
+
+            Core.Server.Resolve<INodeInitializer>().CreateProxies();
             Core.Server.Resolve<IConnectionManager>().OpenOutcomingConnections();
+
+            Core.Server.Log.Info("Synchronization has successfully finished. Entering read-write mode");
 
             return true;
         }
