@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Net.Sockets;
 using System.ServiceModel;
 using System.Threading;
 
@@ -178,6 +180,18 @@ namespace FloatingQueue.Common.Proxy.QueueServiceProxy
             catch (FaultException)
             {
                 throw;
+            }
+            catch(IOException)
+            {
+                if (!m_CancelFireClientCall)
+                    FireClientCallFailed();
+                return failoverAction();
+            }
+            catch(SocketException)
+            {
+                if (!m_CancelFireClientCall)
+                    FireClientCallFailed();
+                return failoverAction();
             }
             catch (CommunicationException)
             {

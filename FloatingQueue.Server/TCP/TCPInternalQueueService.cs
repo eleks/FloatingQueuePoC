@@ -8,33 +8,24 @@ using FloatingQueue.Server.Services.Implementation;
 
 namespace FloatingQueue.Server.TCP
 {
-    public class TCPInternalQueueService : TCPPublicQueueService
+    public class TCPInternalQueueService : TCPPublicQueueServiceBase<IInternalQueueService>
     {
-        public override bool Dispatch(TCPBinaryReader request, TCPBinaryWriter response)
+        protected override void InitializeDispatcher()
         {
-            var service = new InternalQueueService();
-            if (DoPublicQueueServiceDispatch(service, request, response))
-                return true;
-            if (DoInternalQueueServiceDispatch(service, request, response))
-                return true;
-            return false;
+            base.InitializeDispatcher();
+
+            AddDispatcher("Ping", Ping);
+            AddDispatcher("IntroduceNewNode", IntroduceNewNode);
+            AddDispatcher("RequestSynchronization", RequestSynchronization);
+            AddDispatcher("ReceiveSingleAggregate", ReceiveSingleAggregate);
+            AddDispatcher("NotificateSynchronizationFinished", NotificateSynchronizationFinished);
+            throw new NotImplementedException("A Dispatcher is required for GetExtended Metadata");
         }
 
-
-        private bool DoInternalQueueServiceDispatch(IInternalQueueService service, TCPBinaryReader request, TCPBinaryWriter response)
+        protected override IInternalQueueService CreateService()
         {
-            if (request.Command == "Ping".GetHashCode())
-                return Ping(service, request, response);
-            if (request.Command == "IntroduceNewNode".GetHashCode())
-                return IntroduceNewNode(service, request, response);
-            if (request.Command == "RequestSynchronization".GetHashCode())
-                    return RequestSynchronization(service, request, response);
-            if (request.Command == "ReceiveAggregateEvents".GetHashCode())
-                    return ReceiveAggregateEvents(service, request, response);
-            if (request.Command == "NotificateAllAggregatesSent".GetHashCode())
-                return NotificateAllAggregatesSent(service, request, response);
-
-            return false;
+            var service = new InternalQueueService();
+            return service;
         }
 
         //int Ping();
@@ -46,13 +37,13 @@ namespace FloatingQueue.Server.TCP
             return true;
         }
 
-        private static ExtendedNodeInfo ReadNodeInfo(TCPBinaryReader request)
+        private static NodeInfo ReadNodeInfo(TCPBinaryReader request)
         {
-            throw new NotImplementedException("ExtendedNodeInfo has new fields");
-            var result = new ExtendedNodeInfo 
+            throw new NotImplementedException("NodeInfo has new structure");
+            var result = new NodeInfo
             {
-                //Address = request.ReadString(), 
-                ServerId = (byte) request.ReadInt32()
+                Address = request.ReadString()
+              //  ServerId = (byte)request.ReadInt32()
             };
             return result;
         }
@@ -60,8 +51,9 @@ namespace FloatingQueue.Server.TCP
         //void IntroduceNewNode(NodeInfo nodeInfo);
         protected bool IntroduceNewNode(IInternalQueueService service, TCPBinaryReader request, TCPBinaryWriter response)
         {
+            throw new NotImplementedException("NodeInfo has new structure");
             var nodeInfo = ReadNodeInfo(request);
-            service.IntroduceNewNode(nodeInfo);
+            //service.IntroduceNewNode(nodeInfo);
             return true;
         }
 
@@ -69,6 +61,7 @@ namespace FloatingQueue.Server.TCP
         protected bool RequestSynchronization(IInternalQueueService service, TCPBinaryReader request, TCPBinaryWriter response)
         {
             throw new NotImplementedException("RequestSynchronization has new signature");
+
             var serverId = request.ReadInt32();
             var count = request.ReadInt32();
             var dic = new Dictionary<string, int>(count);
@@ -78,13 +71,15 @@ namespace FloatingQueue.Server.TCP
                 var value = request.ReadInt32();
                 dic.Add(key, value);
             }
-           // service.RequestSynchronization(serverId, dic);
+            //service.RequestSynchronization(serverId, dic);
             return true;
         }
 
-        //void ReceiveAggregateEvents(string aggregateId, int version, IEnumerable<object> events) 
-        protected bool ReceiveAggregateEvents(IInternalQueueService service, TCPBinaryReader request, TCPBinaryWriter response)
+
+        //void ReceiveSingleAggregate(string aggregateId, int version, IEnumerable<object> events) 
+        protected bool ReceiveSingleAggregate(IInternalQueueService service, TCPBinaryReader request, TCPBinaryWriter response)
         {
+            throw new NotImplementedException("ReceiveSingleAggregate's signature may have changed");
             var aggId = request.ReadString();
             var version = request.ReadInt32();
             var count = request.ReadInt32();
@@ -94,14 +89,16 @@ namespace FloatingQueue.Server.TCP
                 var obj = request.ReadObject();
                 dic.Add(obj);
             }
+
             service.ReceiveSingleAggregate(aggId, version, dic);
             return true;
             
         }
 
-        //void NotificateAllAggregatesSent(IDictionary<string, int> writtenAggregatesVersions);
-        protected bool NotificateAllAggregatesSent(IInternalQueueService service, TCPBinaryReader request, TCPBinaryWriter response)
+        //void NotificateSynchronizationFinished(IDictionary<string, int> writtenAggregatesVersions);
+        protected bool NotificateSynchronizationFinished(IInternalQueueService service, TCPBinaryReader request, TCPBinaryWriter response)
         {
+            throw new NotImplementedException("NotificateSynchronizationFinished's signature may have changed");
             var count = request.ReadInt32();
             var dic = new Dictionary<string, int>(count);
             for (int i = 0; i < count; i++)

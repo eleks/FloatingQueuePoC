@@ -56,7 +56,7 @@ namespace FloatingQueue.Server.TCP
 
         public void ReceiveSingleAggregate(string aggregateId, int version, IEnumerable<object> events)
         {
-            var req = CreateRequest("ReceiveAggregateEvents");
+            var req = CreateRequest("ReceiveSingleAggregate");
             req.Write(aggregateId);
             req.Write(version);
             var arr = events.ToArray();
@@ -70,7 +70,7 @@ namespace FloatingQueue.Server.TCP
 
         public bool NotificateSynchronizationFinished(Dictionary<string, int> writtenAggregatesVersions)
         {
-            var req = CreateRequest("NotificateAllAggregatesSent");
+            var req = CreateRequest("NotificateSynchronizationFinished");
             req.Write(writtenAggregatesVersions.Count);
             foreach (var pair in writtenAggregatesVersions)
             {

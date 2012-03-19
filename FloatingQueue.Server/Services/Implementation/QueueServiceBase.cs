@@ -13,7 +13,7 @@ namespace FloatingQueue.Server.Services.Implementation
     {
         public virtual void Push(string aggregateId, int version, object e)
         {
-            Core.Server.Log.Info("Command: push {0} {1} {2}", aggregateId, version, e);
+            Core.Server.Log.Debug("Command: push {0} {1} {2}", aggregateId, version, e);
 
             if (Core.Server.Configuration.IsReadonly)
                 throw new ReadOnlyException("Server is currently in readonly mode. Writes are not allowed");

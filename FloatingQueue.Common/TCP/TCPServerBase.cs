@@ -57,10 +57,9 @@ namespace FloatingQueue.Common.TCP
             private readonly TCPServerBase m_Server;
             private readonly TcpListener m_Listener;
             private readonly List<ConnectionWorkerThread> m_WorkingThreads = new List<ConnectionWorkerThread>();
-            //private readonly List<ThreadBase> m_IdleThreads = new List<ThreadBase>();
 
             public ConnectionListenerThread(TCPServerBase server)
-                : base(server.DisplayName + " - Listener")
+                : base(server.DisplayName + " - Listener for " + server.Port)
             {
                 m_Server = server;
                 m_Listener = new TcpListener(IPAddress.Any, m_Server.Port);
@@ -145,7 +144,7 @@ namespace FloatingQueue.Common.TCP
                         done += justRead;
                     }
                 }
-                catch(IOException)
+                catch (IOException)
                 {
                 }
                 return done;
@@ -217,6 +216,55 @@ namespace FloatingQueue.Common.TCP
                 }
             }
         }
+    }
+
+
+    public abstract class TCPServerAutoDispatchBase<T> : TCPServerBase
+        where T : class
+    {
+        private readonly Dictionary<int, Func<T, TCPBinaryReader, TCPBinaryWriter, bool>> m_DispatchMap =
+            new Dictionary<int, Func<T, TCPBinaryReader, TCPBinaryWriter, bool>>();
+
+        private bool m_InitializingDispatcher;
+
+        protected TCPServerAutoDispatchBase()
+        {
+            DoInitializeDispatcher();
+        }
+
+        protected void AddDispatcher(string name,
+                                     Func<T, TCPBinaryReader, TCPBinaryWriter, bool> dispatcherFunc)
+        {
+            if (!m_InitializingDispatcher)
+                throw new InvalidOperationException("AddDispatcher can be invoked only in Initializing stage");
+            m_DispatchMap.Add(name.GetHashCode(), dispatcherFunc);
+        }
+
+        private void DoInitializeDispatcher()
+        {
+            m_InitializingDispatcher = true;
+            try
+            {
+                InitializeDispatcher();
+            }
+            finally
+            {
+                m_InitializingDispatcher = false;
+            }
+        }
+
+        public override bool Dispatch(TCPBinaryReader request, TCPBinaryWriter response)
+        {
+            Func<T, TCPBinaryReader, TCPBinaryWriter, bool> method;
+            if (!m_DispatchMap.TryGetValue(request.Command, out method))
+                return false;
+            var service = CreateService();
+            return method(service, request, response);
+        }
+
+        protected abstract void InitializeDispatcher();
+        protected abstract T CreateService();
 
     }
 }
+    

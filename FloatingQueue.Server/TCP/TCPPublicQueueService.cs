@@ -8,25 +8,15 @@ using FloatingQueue.Server.Services.Implementation;
 
 namespace FloatingQueue.Server.TCP
 {
-    public class TCPPublicQueueService : TCPServerBase
+    public abstract class TCPPublicQueueServiceBase<T> : TCPServerAutoDispatchBase<T>
+        where T : class, IQueueService
     {
-        public override bool Dispatch(TCPBinaryReader request, TCPBinaryWriter response)
+        protected override void InitializeDispatcher()
         {
-            var service = new PublicQueueService();
-            return DoPublicQueueServiceDispatch(service, request, response);
-        }
-
-        protected bool DoPublicQueueServiceDispatch(IQueueService service, TCPBinaryReader request, TCPBinaryWriter response)
-        {
-            if (request.Command == "Push".GetHashCode())
-                return Push(service, request, response);
-            if (request.Command == "TryGetNext".GetHashCode())
-                return TryGetNext(service, request, response);
-            if (request.Command == "GetAllNext".GetHashCode())
-                return GetAllNext(service, request, response);
-            if (request.Command == "GetClusterMetadata".GetHashCode())
-                return GetClusterMetadata(service, request, response);
-            return false;
+            AddDispatcher("Push", Push);
+            AddDispatcher("TryGetNext", TryGetNext);
+            AddDispatcher("GetAllNext", GetAllNext);
+            AddDispatcher("GetClusterMetadata", GetClusterMetadata);
         }
 
         protected bool Push(IQueueService service, TCPBinaryReader request, TCPBinaryWriter response)
@@ -77,6 +67,16 @@ namespace FloatingQueue.Server.TCP
             }
             return true;
         }
-
     }
+
+
+    public class TCPPublicQueueService : TCPPublicQueueServiceBase<IQueueService>
+    {
+        protected override IQueueService CreateService()
+        {
+            var service = new PublicQueueService();
+            return service;
+        }
+    }
+
 }
