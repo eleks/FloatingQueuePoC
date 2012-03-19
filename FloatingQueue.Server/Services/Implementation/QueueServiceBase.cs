@@ -12,7 +12,7 @@ namespace FloatingQueue.Server.Services.Implementation
     {
         public virtual void Push(string aggregateId, int version, object e)
         {
-            Core.Server.Log.Info("Command: push {0} {1} {2}", aggregateId, version, e);
+            Core.Server.Log.Debug("Command: push {0} {1} {2}", aggregateId, version, e);
 
             // note MM: potential bug - if rollback is required, an aggregate who has just been created will not be deleted
             var aggregate = GetEventAggregate(aggregateId);

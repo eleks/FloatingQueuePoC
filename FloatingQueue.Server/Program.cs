@@ -26,7 +26,7 @@ namespace FloatingQueue.Server
                 return;
             }
 
-            InitializeCommunicationProvider(useTCP : false);
+            InitializeCommunicationProvider(useTCP : true);
 
             Initialize(args);
             RunHosts();

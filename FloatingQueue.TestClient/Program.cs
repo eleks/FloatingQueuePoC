@@ -21,7 +21,7 @@ namespace FloatingQueue.TestClient
 
         static void Main(string[] args)
         {
-            InitializeCommunicationProvider(useTCP: false);
+            InitializeCommunicationProvider(useTCP: true);
             //
             Logger.Instance.Info("Test Client");
 
