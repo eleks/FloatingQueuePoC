@@ -29,12 +29,11 @@ namespace FloatingQueue.Server.TCP
         }
 
         //int Ping();
-        protected bool Ping(IInternalQueueService service, TCPBinaryReader request, TCPBinaryWriter response)
+        protected void Ping(IInternalQueueService service, TCPBinaryReader request, TCPBinaryWriter response)
         {
             var ping = service.Ping();
             //
             response.Write(ping);
-            return true;
         }
 
         public static ExtendedNodeInfo ReadNodeInfo(TCPBinaryReader request)
@@ -58,15 +57,14 @@ namespace FloatingQueue.Server.TCP
         }
 
         //void IntroduceNewNode(ExtendedNodeInfo nodeInfo);
-        protected bool IntroduceNewNode(IInternalQueueService service, TCPBinaryReader request, TCPBinaryWriter response)
+        protected void IntroduceNewNode(IInternalQueueService service, TCPBinaryReader request, TCPBinaryWriter response)
         {
             var nodeInfo = ReadNodeInfo(request);
             service.IntroduceNewNode(nodeInfo);
-            return true;
         }
 
         //void RequestSynchronization(ExtendedNodeInfo nodeInfo, Dictionary<string, int> currentAggregateVersions);
-        protected bool RequestSynchronization(IInternalQueueService service, TCPBinaryReader request, TCPBinaryWriter response)
+        protected void RequestSynchronization(IInternalQueueService service, TCPBinaryReader request, TCPBinaryWriter response)
         {
             var nodeInfo = ReadNodeInfo(request);
             var count = request.ReadInt32();
@@ -78,12 +76,11 @@ namespace FloatingQueue.Server.TCP
                 dic.Add(key, value);
             }
             service.RequestSynchronization(nodeInfo, dic);
-            return true;
         }
 
 
         //void ReceiveSingleAggregate(string aggregateId, int version, IEnumerable<object> events);
-        protected bool ReceiveSingleAggregate(IInternalQueueService service, TCPBinaryReader request, TCPBinaryWriter response)
+        protected void ReceiveSingleAggregate(IInternalQueueService service, TCPBinaryReader request, TCPBinaryWriter response)
         {
             var aggId = request.ReadString();
             var version = request.ReadInt32();
@@ -96,11 +93,10 @@ namespace FloatingQueue.Server.TCP
             }
 
             service.ReceiveSingleAggregate(aggId, version, dic);
-            return true;
         }
 
         //bool NotificateSynchronizationFinished(Dictionary<string, int> writtenAggregatesVersions);
-        protected bool NotificateSynchronizationFinished(IInternalQueueService service, TCPBinaryReader request, TCPBinaryWriter response)
+        protected void NotificateSynchronizationFinished(IInternalQueueService service, TCPBinaryReader request, TCPBinaryWriter response)
         {
             var count = request.ReadInt32();
             var dic = new Dictionary<string, int>(count);
@@ -112,11 +108,10 @@ namespace FloatingQueue.Server.TCP
             }
             var res = service.NotificateSynchronizationFinished(dic);
             response.Write(res);
-            return true;
         }
 
         // List<ExtendedNodeInfo> GetExtendedMetadata();
-        protected bool GetExtendedMetadata(IInternalQueueService service, TCPBinaryReader request, TCPBinaryWriter response)
+        protected void GetExtendedMetadata(IInternalQueueService service, TCPBinaryReader request, TCPBinaryWriter response)
         {
             var res = service.GetExtendedMetadata();
             response.Write(res.Count);
@@ -124,7 +119,6 @@ namespace FloatingQueue.Server.TCP
             {
                 WriteNodeInfo(response, res[i]);
             }
-            return true;
         }
     }
 }

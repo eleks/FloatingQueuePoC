@@ -6,15 +6,15 @@ namespace FloatingQueue.Common.TCP
 {
     public class TCPBinaryReader
     {
-        public static readonly int HeaderSize = 3*sizeof (int);
+        public static readonly uint HeaderSize = 3*sizeof (int);
 
-        public readonly int Command;
+        public readonly uint Command;
         public readonly bool IsComplete;
 
         private readonly MemoryStream m_Stream;
         private readonly BinaryReader m_Reader;
 
-        public TCPBinaryReader(int expectedSignature, Func<byte[], int> dataReceiveCallback)
+        public TCPBinaryReader(uint expectedSignature, Func<byte[], int> dataReceiveCallback)
         {
             var header = new byte[HeaderSize];
             if (dataReceiveCallback(header) == header.Length)
@@ -30,24 +30,24 @@ namespace FloatingQueue.Common.TCP
             }
         }
 
-        private static Tuple<int, int> ParseHeader(byte[] header, int expectedSignature)
+        private static Tuple<uint, uint> ParseHeader(byte[] header, uint expectedSignature)
         {
             if (header.Length != HeaderSize)
                 throw new ArgumentException("Invalid header size");
-            int dataSize;
-            int command;
+            uint dataSize;
+            uint command;
             using (var tempStream = new MemoryStream(header))
             {
                 using (var tempReader = new BinaryReader(tempStream))
                 {
-                    var signature = tempReader.ReadInt32();
+                    var signature = tempReader.ReadUInt32();
                     if (signature != expectedSignature)
                         throw new InvalidDataException("Invalid TCP packet signature");
-                    dataSize = tempReader.ReadInt32();
-                    command = tempReader.ReadInt32();
+                    dataSize = tempReader.ReadUInt32();
+                    command = tempReader.ReadUInt32();
                 }
             }
-            return new Tuple<int, int>(command, dataSize - HeaderSize);
+            return new Tuple<uint, uint>(command, dataSize - HeaderSize);
         }
 
         //
