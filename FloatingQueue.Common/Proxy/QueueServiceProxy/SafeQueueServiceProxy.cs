@@ -18,16 +18,18 @@ namespace FloatingQueue.Common.Proxy.QueueServiceProxy
         public event ClientCallFailedHandler OnClientCallFailed;
         public event ConnectionLostHandler OnConnectionLost;
 
-        private List<NodeInfo> m_Nodes;
         private bool m_KeepConnectionOpened;
-        private bool m_CancelFireClientCall;
+        private bool m_CancelFireClientCall = false;
         private bool m_Initialized;
         private bool m_ConnectionLost = false;
+
+        //todo: save information that address is dead
+        private static readonly List<string> ms_SharedAddressPool = new List<string>();
+        private static readonly object ms_SyncRoot = new object();
 
         public SafeQueueServiceProxy(string address)
             : base(address)
         {
-
             //todo: think about using WCF's tools to detect failures
             //var a = Client as ICommunicationObject;
             //a.Faulted += (sender, args) => { var b = 5; };
@@ -43,13 +45,12 @@ namespace FloatingQueue.Common.Proxy.QueueServiceProxy
             OnClientCallFailed += HandleClientCallFailed;
             OnConnectionLost += HandleConnectionLost;
 
-            m_CancelFireClientCall = true;
             var metadata = this.GetClusterMetadata();
             if (metadata == null)
                 return false;
 
             m_CancelFireClientCall = false;
-            m_Nodes = metadata.Nodes;
+            AddSharedAddresses(metadata.Nodes.Select(n => n.Address));
             return true;
         }
 
@@ -114,21 +115,25 @@ namespace FloatingQueue.Common.Proxy.QueueServiceProxy
         private void HandleClientCallFailed()
         {
             bool success = false;
-            List<NodeInfo> newNodes = null;
-            string newAddress = string.Empty;
+            List<string> newAddresses = null;
+            string newMasterAddress = string.Empty;
 
             m_CancelFireClientCall = true;
 
-            foreach (var node in m_Nodes)
+            string[] addressPool = GetSharedAddresses();
+            foreach (var nodeAddress in addressPool)
             {
-                
+                //todo: wrap this in method
                 DoClose();
-                EndpointAddress = new EndpointAddress(node.Address);
+                EndpointAddress = new EndpointAddress(nodeAddress);
                 CreateClient();
 
                 var metadata = this.GetClusterMetadata();
                 if (metadata == null)
+                {
+                    RemoveSharedAddress(nodeAddress);
                     continue;
+                }
 
                 var master = metadata.Nodes.SingleOrDefault(n => n.IsMaster);
                 if (master == null)
@@ -139,10 +144,14 @@ namespace FloatingQueue.Common.Proxy.QueueServiceProxy
                 CreateClient();
 
                 var testCall = this.GetClusterMetadata();
-                if (testCall == null || testCall.Nodes == null) continue;
+                if (testCall == null || testCall.Nodes == null)
+                {
+                    RemoveSharedAddress(master.Address);
+                    continue;
+                }
 
-                newNodes = testCall.Nodes;
-                newAddress = master.Address;
+                newAddresses = testCall.Nodes.Select(n => n.Address).ToList();
+                newMasterAddress = master.Address;
                 success = true;
                 break;
             }
@@ -151,8 +160,8 @@ namespace FloatingQueue.Common.Proxy.QueueServiceProxy
 
             if (success)
             {
-                FireMasterChanged(newAddress);
-                m_Nodes = newNodes;
+                FireMasterChanged(newMasterAddress);
+                AddSharedAddresses(newAddresses);
             }
             else
             {
@@ -175,6 +184,7 @@ namespace FloatingQueue.Common.Proxy.QueueServiceProxy
 
             try
             {
+                //todo: retry action on exceptions(and a bug with handled init crash returning false would be fixed)
                 return action();
             }
             catch (FaultException)
@@ -211,6 +221,41 @@ namespace FloatingQueue.Common.Proxy.QueueServiceProxy
                     DoClose();
             }
         }
+
+        #region Shared Address Pool
+
+        private static void AddSharedAddresses(IEnumerable<string> addresses)
+        {
+            lock (ms_SyncRoot)
+            {
+                foreach (var address in addresses)
+                {
+                    if (!ms_SharedAddressPool.Contains(address))
+                        ms_SharedAddressPool.Add(address);
+                }
+            }
+        }
+
+        private static void RemoveSharedAddress(string address)
+        {
+            lock (ms_SyncRoot)
+            {
+                ms_SharedAddressPool.Remove(address);
+            }
+        }
+
+        private static string[] GetSharedAddresses()
+        {
+            string[] addressPool;
+            lock (ms_SyncRoot)
+            {
+                addressPool = new string[ms_SharedAddressPool.Count];
+                ms_SharedAddressPool.CopyTo(addressPool);
+            }
+            return addressPool;
+        }
+
+        #endregion
 
     }
 }
