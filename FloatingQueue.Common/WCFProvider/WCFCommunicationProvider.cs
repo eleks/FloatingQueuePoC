@@ -24,5 +24,21 @@ namespace FloatingQueue.Common.WCF
             var host = new ServiceHost(serviceType, serviceUri) {CloseTimeout = TimeSpan.FromMilliseconds(1000)};
             return host;
         }
+
+        public void SafeNetworkCall(Action action)
+        {
+            try
+            {
+                action();
+            }
+            catch (CommunicationException e)
+            {
+                throw new ConnectionErrorException(e);
+            }
+            catch (TimeoutException e)
+            {
+                throw new ConnectionErrorException(e);
+            }
+        }
     }
 }

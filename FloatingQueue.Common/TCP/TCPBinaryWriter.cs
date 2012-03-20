@@ -7,6 +7,7 @@ namespace FloatingQueue.Common.TCP
     public class TCPBinaryWriter
     {
         public readonly uint Command;
+        private readonly uint m_Signature;
         private readonly MemoryStream m_Stream;
         private BinaryWriter m_Writer;
         private int m_Size;
@@ -14,13 +15,21 @@ namespace FloatingQueue.Common.TCP
         public TCPBinaryWriter(uint signature, uint command)
         {
             Command = command;
+            m_Signature = signature;
             //
             m_Stream = new MemoryStream();
             m_Writer = new BinaryWriter(m_Stream);
-            Write(signature);
+            WriteHeader(command);
+        }
+
+        private void WriteHeader(uint command)
+        {
+            m_Writer.Seek(0, SeekOrigin.Begin);
+            m_Size = 0;
+            Write(m_Signature);
             const int size = 0;
             Write(size); // reserve place for packet size
-            Write(Command);
+            Write(command);
         }
 
         private void EnsureWriteAllowed()
@@ -43,6 +52,14 @@ namespace FloatingQueue.Common.TCP
         }
 
         #region Write Methods
+
+        public void WriteErrorResponse(int code, string message)
+        {
+            EnsureWriteAllowed();
+            WriteHeader(TCPCommunicationSignature.CmdException);
+            Write(code);
+            Write(message);
+        }
 
         public void Write(bool value)
         {

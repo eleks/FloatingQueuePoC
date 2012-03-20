@@ -7,6 +7,7 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using FloatingQueue.Common.Common;
+using FloatingQueue.Common.Proxy;
 
 namespace FloatingQueue.Common.TCP
 {
@@ -30,8 +31,6 @@ namespace FloatingQueue.Common.TCP
             //
             m_ListenerThread = new ConnectionListenerThread(this);
         }
-
-        public abstract bool Dispatch(TCPBinaryReader request, TCPBinaryWriter response);
 
         public override void Open()
         {
@@ -105,7 +104,6 @@ namespace FloatingQueue.Common.TCP
             }
         }
 
-
         public class ConnectionWorkerThread : ThreadBase
         {
             private readonly TCPServerBase m_Server;
@@ -175,20 +173,22 @@ namespace FloatingQueue.Common.TCP
                         {
                             break;
                         }
-                        if (req.Command == 0) // Close command
+                        if (req.Command == TCPCommunicationSignature.CmdClose) // Close command
                         {
                             break;
                         }
 
                         var res = new TCPBinaryWriter(TCPCommunicationSignature.Response, req.Command);
-                        var isOk = m_Server.Dispatch(req, res);
-                        if (!isOk)
-                        {
+                        var status = m_Server.SafeDispatch(req, res);
+                        if (status == DispatchStatus.Close)
                             break;
-                        }
+                        //
                         byte[] data;
                         var dataSize = res.Finish(out data);
                         m_TcpClient.GetStream().Write(data, 0, dataSize);
+                        //
+                        if (status == DispatchStatus.SendAndClose)
+                            break;
                     }
                 }
                 catch (Exception e)
@@ -213,7 +213,18 @@ namespace FloatingQueue.Common.TCP
                     m_TcpClient.Close();
                 }
             }
+
         }
+
+        protected enum DispatchStatus
+        {
+            SendAndContinue,
+            SendAndClose,
+            Close
+        }
+
+
+        protected abstract DispatchStatus SafeDispatch(TCPBinaryReader request, TCPBinaryWriter response);
     }
 
 
@@ -230,15 +241,12 @@ namespace FloatingQueue.Common.TCP
             DoInitializeDispatcher();
         }
 
-        protected void AddDispatcher(string name,
-                                     Action<T, TCPBinaryReader, TCPBinaryWriter> dispatcherFunc)
+        protected void AddDispatcher(string name, Action<T, TCPBinaryReader, TCPBinaryWriter> dispatcherFunc)
         {
             if (!m_InitializingDispatcher)
                 throw new InvalidOperationException("AddDispatcher can be invoked only in Initializing stage");
             var hash = (uint)name.GetHashCode();
             hash &= 0x7FFFFFFF;
-            if (hash == 0)
-                throw new Exception("Invalid Method Name (hash == 0): " + name);
             m_DispatchMap.Add(hash, dispatcherFunc);
         }
 
@@ -255,14 +263,32 @@ namespace FloatingQueue.Common.TCP
             }
         }
 
-        public override bool Dispatch(TCPBinaryReader request, TCPBinaryWriter response)
+        protected override DispatchStatus SafeDispatch(TCPBinaryReader request, TCPBinaryWriter response)
+        {
+            try
+            {
+                DoDispatch(request, response);
+                return DispatchStatus.SendAndContinue;
+            }
+            catch(InvalidProtocolException e)
+            {
+                response.WriteErrorResponse(InvalidProtocolException.CODE, e.Message);
+                return DispatchStatus.SendAndClose;
+            }
+            catch(Exception e)
+            {
+                response.WriteErrorResponse(ServerInternalException.CODE, e.Message);
+                return DispatchStatus.SendAndContinue;
+            }
+        }
+
+        protected void DoDispatch(TCPBinaryReader request, TCPBinaryWriter response)
         {
             Action<T, TCPBinaryReader, TCPBinaryWriter> method;
             if (!m_DispatchMap.TryGetValue(request.Command, out method))
-                return false;
+                throw new InvalidProtocolException("Invalid command code: " + request.Command);
             var service = CreateService();
             method(service, request, response);
-            return true;
         }
 
         protected abstract void InitializeDispatcher();

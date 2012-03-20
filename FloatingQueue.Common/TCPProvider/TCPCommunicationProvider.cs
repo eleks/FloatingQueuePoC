@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Net.Sockets;
 using System.ServiceModel;
 using System.Text;
 using FloatingQueue.Common.TCP;
@@ -31,6 +33,26 @@ namespace FloatingQueue.Common.TCPProvider
             var res = ctor();
             res.Initialize(displayName, address);
             return res;
+        }
+
+        public void SafeNetworkCall(Action action)
+        {
+            try
+            {
+                action();
+            }
+            catch (IOException e)
+            {
+                throw new ConnectionErrorException(e);
+            }
+            catch (SocketException e)
+            {
+                throw new ConnectionErrorException(e);
+            }
+            catch (TimeoutException e)
+            {
+                throw new ConnectionErrorException(e);
+            }
         }
 
 

@@ -3,10 +3,19 @@ using System.ServiceModel;
 
 namespace FloatingQueue.Common
 {
+    public class ConnectionErrorException : Exception
+    {
+        public ConnectionErrorException(Exception innerException) : base("Communication Error", innerException)
+        {
+        }
+    }
+
+
     public interface ICommunicationProvider
     {
         T CreateChannel<T>(EndpointAddress endpointAddress);
         ICommunicationObject CreateHost<T>(string displayName, string address);
+        void SafeNetworkCall(Action action);
     }
 
     public static class CommunicationProvider

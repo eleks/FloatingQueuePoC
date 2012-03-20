@@ -2,6 +2,7 @@
 using System.IO;
 using System.Net.Sockets;
 using System.ServiceModel;
+using System.Threading;
 using FloatingQueue.Common.Proxy;
 
 namespace FloatingQueue.Common.TCP
@@ -83,7 +84,7 @@ namespace FloatingQueue.Common.TCP
 
         private void SendCloseCommand()
         {
-            var request = new TCPBinaryWriter(TCPCommunicationSignature.Request, 0);
+            var request = new TCPBinaryWriter(TCPCommunicationSignature.Request, TCPCommunicationSignature.CmdClose);
             byte[] data;
             var dataSize = request.Finish(out data);
             var stream = m_TcpClient.GetStream();
@@ -112,17 +113,30 @@ namespace FloatingQueue.Common.TCP
             var recvData = new TCPBinaryReader(TCPCommunicationSignature.Response, ReadBuffer);
             if (!recvData.IsComplete)
                 throw new IOException("Incomplete response received");
-            if (recvData.Command != request.Command)
-                throw new IOException("Invalid response command");
+            if (recvData.Command == TCPCommunicationSignature.CmdException)
+            {
+                throw HandleErrorResponse(recvData);
+            }
+            if (recvData.Command != request.Command && recvData.Command != TCPCommunicationSignature.CmdException)
+                    throw new InvalidProtocolException("Invalid response command");
             return recvData;
         }
 
-        protected void HandleErrorResponse(TCPBinaryReader response)
+        protected Exception HandleErrorResponse(TCPBinaryReader response)
         {
-            if (response.Command == 0x80000000)
+            if (response.Command != 0x80000000)
+                throw new InvalidOperationException("Call to HandleErrorResponse for non-error response");
+            
+            var exceptionClassCode = response.ReadInt32();
+            var msg = response.ReadString();
+            switch(exceptionClassCode)
             {
-                var msg = response.ReadString();
-                throw new ServerInternalException(msg);      
+                case ServerInternalException.CODE: return new ServerInternalException(msg);
+                case ServerInvalidArgumentException.CODE: return new ServerInvalidArgumentException(msg);
+                case ServerStreamAlreadyChangedException.CODE: return new ServerStreamAlreadyChangedException(msg);
+                case InvalidProtocolException.CODE: return new InvalidProtocolException(msg);
+                default:
+                    return new NotSupportedException("Unknown server exception code: " + exceptionClassCode);
             }
         }
     }

@@ -21,7 +21,7 @@ namespace FloatingQueue.TestClient
 
         static void Main(string[] args)
         {
-            InitializeCommunicationProvider(useTCP: false);
+            InitializeCommunicationProvider(useTCP: true);
             //
             Logger.Instance.Info("Test Client");
 
@@ -81,7 +81,7 @@ namespace FloatingQueue.TestClient
             using (proxy)
             {
                 bool stop = false;
-                proxy.ConnectionLost += (sender, e) => stop = true;
+                //proxy.ConnectionLost += (sender, e) => stop = true;
                 for (int i = 0; i < requests && !stop; i++)
                 {
                     proxy.Push(ms_Rand.Next().ToString(), -1, ms_Rand.Next().ToString());
@@ -107,14 +107,18 @@ namespace FloatingQueue.TestClient
             proxy = new SafeQueueServiceProxy(address);
             //proxy.ClientCallFailed += () => Logger.Instance.Warn("Call to {0} failed...", address);//TODO: to be removed during refactoring
             //proxy.ConnectionLost += () => Logger.Instance.Error("Error! Connection to cluster is completely lost");
-            proxy.MasterChanged += (sender, e) =>
-                                          {
-                                              Logger.Instance.Info("New master set on {0}", e.NewMasterAdress);
-                                              MasterAddress = e.NewMasterAdress;
-                                          };
-            if (!proxy.Init(keepConnectionOpened))
+            //proxy.MasterChanged += (sender, e) =>
+            //                              {
+            //                                  Logger.Instance.Info("New master set on {0}", e.NewMasterAdress);
+            //                                  MasterAddress = e.NewMasterAdress;
+            //                              };
+            try
             {
-                Logger.Instance.Error("Cannot establish connection with server at {0}", MasterAddress);
+                proxy.Init(keepConnectionOpened);
+            }
+            catch(Exception e)
+            {
+                Logger.Instance.Error("Cannot establish connection with server at {0}. Error {1}:{2}", MasterAddress, e.GetType().Name, e.Message);
                 return false;
             }
             return true;

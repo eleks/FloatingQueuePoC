@@ -73,6 +73,10 @@ namespace FloatingQueue.Common.TCP
         public static readonly uint Request = 0x34567890;
         public static readonly uint Response = 0x67234519;
         public static readonly uint EndOfStream = 0xFFEEDDBB;
+
+        //
+        public static readonly uint CmdClose = 0xF0000000;
+        public static readonly uint CmdException = 0x80000000;
     }
 
 

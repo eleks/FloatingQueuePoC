@@ -7,7 +7,7 @@ start FloatingQueue.Server\bin\Debug\FloatingQueue.Server.exe -pubport=10081 -in
 start FloatingQueue.Server\bin\Debug\FloatingQueue.Server.exe -pubport=10082 -intport=11082 -id=2 -nodes=%MASTER%
 
 rem sleep 3
-runClient.cmd
+rem runClient.cmd
 
 
 rem -pubport=10080 -intport=11080 -id=0 -m

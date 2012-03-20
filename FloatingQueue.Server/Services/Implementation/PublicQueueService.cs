@@ -8,6 +8,8 @@ namespace FloatingQueue.Server.Services.Implementation
         {
             if (!Core.Server.Configuration.IsMaster)
                 throw new ApplicationException("Clients cannot write directly to slaves.");
+            if (aggregateId == "err")
+                throw new ApplicationException("Server error");
             base.Push(aggregateId, version, e);
         }
     }

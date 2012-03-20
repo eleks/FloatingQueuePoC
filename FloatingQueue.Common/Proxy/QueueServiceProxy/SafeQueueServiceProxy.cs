@@ -19,14 +19,13 @@ namespace FloatingQueue.Common.Proxy.QueueServiceProxy
 
     public class SafeQueueServiceProxy : QueueServiceProxyBase
     {
-        private bool m_KeepConnectionOpened;
-        private bool m_CancelFireClientCall = false;
-        private bool m_Initialized;
-        private bool m_ConnectionLost = false;
-
         //todo: save information that address is dead and try to connect to it in case all current nodes are dead
-        private static readonly List<string> ms_SharedAddressPool = new List<string>();
+        private static ClusterMetadata ms_SharedClusterMetadata = null;
         private static readonly object ms_SyncRoot = new object();
+
+        private bool m_KeepConnectionOpened;
+        private bool m_Initialized;
+        private bool m_NoRetryMode;
 
         public SafeQueueServiceProxy(string address)
             : base(address)
@@ -36,36 +35,23 @@ namespace FloatingQueue.Common.Proxy.QueueServiceProxy
             //a.Faulted += (sender, args) => { var b = 5; };
         }
 
-        public event EventHandler<MasterChangedEventArgs> MasterChanged;
-        public event EventHandler ClientCallFailed;
-        public event EventHandler ConnectionLost;
-
-        public bool Init(bool keepConnectionOpened = false)
+        public void Init(bool keepConnectionOpened = false)
         {
             if (m_Initialized)
                 throw new InvalidOperationException("Proxy is already initialized");
 
             m_Initialized = true;
             m_KeepConnectionOpened = keepConnectionOpened;
-            ClientCallFailed += HandleClientCallFailed;
-            ConnectionLost += HandleConnectionLost;
 
-            var metadata = this.GetClusterMetadata();
-            if (metadata == null)
-                return false;
-
-            m_CancelFireClientCall = false;
-            AddSharedAddresses(metadata.Nodes.Select(n => n.Address));
-            return true;
+            ConnectToMaster();
         }
 
         public override void Push(string aggregateId, int version, object e)
         {
             SafeCall(() =>
             {
-                base.Push(aggregateId, version, e); return 0;
-            },
-            failoverAction: () => 0);
+                base.Push(aggregateId, version, e);
+            });
         }
 
         public override bool TryGetNext(string aggregateId, int version, out object next)
@@ -73,134 +59,71 @@ namespace FloatingQueue.Common.Proxy.QueueServiceProxy
             // can't use ref or out inside lambda
             next = null;
             object hack = null;
+            bool result = false;
 
-            bool result = SafeCall(() =>
+            SafeCall(() =>
             {
                 object n;
-                bool success = base.TryGetNext(aggregateId, version, out n);
+                result = base.TryGetNext(aggregateId, version, out n);
                 hack = n;
-                return success;
-            },
-            failoverAction: () => false);
-
+            });
             next = hack;
             return result;
         }
 
         public override IEnumerable<object> GetAllNext(string aggregateId, int version)
         {
-            return SafeCall(() => base.GetAllNext(aggregateId, version),
-            failoverAction: () => null);
+            IEnumerable<object> result = null;
+            SafeCall(() => result = base.GetAllNext(aggregateId, version));
+            return result;
         }
 
         public override ClusterMetadata GetClusterMetadata()
         {
-            return SafeCall(() => base.GetClusterMetadata(),
-            failoverAction: () => null);
+            ClusterMetadata result = null;
+            SafeCall(() => result = base.GetClusterMetadata());
+            return result;
         }
 
-        private void HandleClientCallFailed(object sender, EventArgs e)
-        {
-            bool success = false;
-            List<string> newAddresses = null;
-            string newMasterAddress = string.Empty;
-
-            m_CancelFireClientCall = true;
-
-            string[] addressPool = GetSharedAddresses();
-            foreach (var nodeAddress in addressPool)
-            {
-
-                CloseClient();
-                //EndpointAddress = new EndpointAddress(node.Address);//TODO: to be removed during refactoring
-                //CreateClient();
-
-                var metadata = this.GetClusterMetadata();
-                if (metadata == null)
-                {
-                    RemoveSharedAddress(nodeAddress);
-                    continue;
-                }
-
-                var master = metadata.Nodes.SingleOrDefault(n => n.IsMaster);
-                if (master == null)
-                    throw new ApplicationException("Critical Error! There's no master in cluster");
-
-                CloseClient();
-                //EndpointAddress = new EndpointAddress(master.Address);//TODO: to be removed during refactoring
-                //CreateClient();
-
-                var testCall = this.GetClusterMetadata();
-                if (testCall == null || testCall.Nodes == null)
-                {
-                    RemoveSharedAddress(master.Address);
-                    continue;
-                }
-
-                newAddresses = testCall.Nodes.Select(n => n.Address).ToList();
-                newMasterAddress = master.Address;
-                success = true;
-                break;
-            }
-
-            m_CancelFireClientCall = false;
-
-            if (success)
-            {
-                OnMasterChanged(this, new MasterChangedEventArgs(newMasterAddress));
-                AddSharedAddresses(newAddresses);
-            }
-            else
-            {
-                OnConnectionLost(this, EventArgs.Empty);
-            }
-        }
-
-        private void HandleConnectionLost(object sender, EventArgs e)
-        {
-            m_ConnectionLost = true;
-        }
-
-        private T SafeCall<T>(Func<T> action, Func<T> failoverAction)
+        private void SafeCall(Action action)
         {
             if (!m_Initialized)
                 throw new InvalidOperationException("Proxy has to be initialized first");
+            //
+            if (m_NoRetryMode)
+            {
+                SafeNetworkOperation(action); // do the operation
+            }
+            else
+            {
+                const int maxRetry = 3;
+                int retry = 0;
+                while (retry < maxRetry)
+                {
+                    try
+                    {
+                        if (retry > 0)
+                        {
+                            ConnectToMaster();
+                        }
+                        SafeNetworkOperation(action); // try do operation
+                        break; // no exceptions - success
+                    }
+                    catch (ConnectionErrorException)
+                    {
+                        if (retry == maxRetry)
+                            throw;
+                    }
+                    retry++;
+                }
+            }
+        }
 
-            //if (m_ConnectionLost)
-            //    return failoverAction();
-
+        private void SafeNetworkOperation(Action action)
+        {
             try
             {
-                //todo: retry action on exceptions(and a bug with handled init crash returning false would be fixed)
-                return action();
-            }
-            catch (FaultException)
-            {
-                throw;
-            }
-            catch (IOException)
-            {
-                if (!m_CancelFireClientCall)
-                    OnClientCallFailed(this, EventArgs.Empty);
-                return failoverAction();
-            }
-            catch (SocketException)
-            {
-                if (!m_CancelFireClientCall)
-                    OnClientCallFailed(this, EventArgs.Empty);
-                return failoverAction();
-            }
-            catch (CommunicationException)
-            {
-                if (!m_CancelFireClientCall)
-                    OnClientCallFailed(this, EventArgs.Empty);
-                return failoverAction();
-            }
-            catch (TimeoutException)
-            {
-                if (!m_CancelFireClientCall)
-                    OnClientCallFailed(this, EventArgs.Empty);
-                return failoverAction();
+                CommunicationProvider.Instance.SafeNetworkCall(action);
             }
             finally
             {
@@ -209,64 +132,112 @@ namespace FloatingQueue.Common.Proxy.QueueServiceProxy
             }
         }
 
-        protected virtual void OnMasterChanged(object sender, MasterChangedEventArgs e)
+        private void ConnectToMaster()
         {
-            var handler = MasterChanged;
-            if (handler != null)
+            Exception lastError = null;
+            bool atLeastOneConnectionHasBeenEsteblished = false;
+            ClusterMetadata newMetadata = null;
+
+            Func<string, ClusterMetadata> connectToMasterViaAddrFunc = addr =>
             {
-                handler(sender, e);
+                try
+                {
+                    var meta = ObtainNewMetadata(addr);
+                    atLeastOneConnectionHasBeenEsteblished = true;
+                    var master = meta.Nodes.SingleOrDefault(n => n.IsMaster);
+                    if (master == null)
+                        throw new ServerIsReadonlyException("No master found");
+                    if (master.Address != Address)
+                    {
+                        meta = ObtainNewMetadata(master.Address); // reconnect to obtained master and take its metadata
+                        master = meta.Nodes.SingleOrDefault(n => n.IsMaster);
+                        if (master == null || master.Address != Address)
+                            throw new Exception("Master say - he is not a master ???");
+                    }
+                    return meta;
+                }
+                catch (Exception ex)
+                {
+                    lastError = ex;
+                    return null;
+                }
+            };
+
+            // use shared metadata to esteblish master connection
+            ClusterMetadata oldMetadata = GetSharedClusterMetadata();
+            if (oldMetadata != null)
+            {
+                // try to connect to last known master
+                var oldMaster = oldMetadata.Nodes.FirstOrDefault(v => v.IsMaster);
+                if (oldMaster != null)
+                {
+                    newMetadata = connectToMasterViaAddrFunc(oldMaster.Address);
+                }
+                // try to find master anywhere in slaves
+                if (newMetadata == null)
+                {
+                    foreach (var node in oldMetadata.Nodes.Where(v => !v.IsMaster))
+                    {
+                        newMetadata = connectToMasterViaAddrFunc(node.Address);
+                        if (newMetadata != null)
+                            break;
+                    }
+                }
             }
+
+            // try to use specified address (if provided)
+            if (newMetadata == null && Address != null)
+            {
+                newMetadata = connectToMasterViaAddrFunc(Address);
+            }
+
+            // Oops! we still havn't found any valid master
+            if (newMetadata == null)
+            {
+                CloseClient(); // ensure client is closed
+                if (atLeastOneConnectionHasBeenEsteblished)
+                    throw lastError;
+                throw new ServerUnavailableException("No any server has been found");
+            }
+            RegisterSharedClusterMetadata(newMetadata);
         }
 
-        protected virtual void OnClientCallFailed(object sender, EventArgs e)
+        private ClusterMetadata ObtainNewMetadata(string address)
         {
-            var handler = ClientCallFailed;
-            if (handler != null)
+            CloseClient(); // ensure prev client is closed
+            SetNewAddress(address);
+            //
+            ClusterMetadata result;
+            var prevNoRetryMode = m_NoRetryMode;
+            m_NoRetryMode = true;
+            try
             {
-                handler(sender, e);
+                result = this.GetClusterMetadata();
             }
+            finally
+            {
+                m_NoRetryMode = prevNoRetryMode;
+            }
+            return result;
         }
 
-        protected virtual void OnConnectionLost(object sender, EventArgs e)
-        {
-            var handler = ConnectionLost;
-            if (handler != null)
-            {
-                handler(sender, e);
-            }
-        }
 
         #region Shared Address Pool
 
-        private static void AddSharedAddresses(IEnumerable<string> addresses)
+        private static void RegisterSharedClusterMetadata(ClusterMetadata metadata)
         {
             lock (ms_SyncRoot)
             {
-                foreach (var address in addresses)
-                {
-                    if (!ms_SharedAddressPool.Contains(address))
-                        ms_SharedAddressPool.Add(address);
-                }
+                ms_SharedClusterMetadata = metadata;
             }
         }
 
-        private static void RemoveSharedAddress(string address)
+        private static ClusterMetadata GetSharedClusterMetadata()
         {
             lock (ms_SyncRoot)
             {
-                ms_SharedAddressPool.Remove(address);
+                return ms_SharedClusterMetadata;
             }
-        }
-
-        private static string[] GetSharedAddresses()
-        {
-            string[] addressPool;
-            lock (ms_SyncRoot)
-            {
-                addressPool = new string[ms_SharedAddressPool.Count];
-                ms_SharedAddressPool.CopyTo(addressPool);
-            }
-            return addressPool;
         }
 
         #endregion

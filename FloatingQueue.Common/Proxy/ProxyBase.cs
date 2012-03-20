@@ -10,15 +10,22 @@ namespace FloatingQueue.Common.Proxy
 
         protected ProxyBase(string address)
         {
-            if(String.IsNullOrEmpty(address))
-            {
-                throw new ArgumentNullException(address);
-            }
-
-            EndpointAddress = new EndpointAddress(address);
+            SetNewAddress(address);
         }
 
         public EndpointAddress EndpointAddress { get; private set; }
+        public string Address { get; private set; }
+
+        protected void SetNewAddress(string address)
+        {
+            if (string.IsNullOrEmpty(address))
+                throw new ArgumentNullException("address");
+
+            if (m_Client != null)
+                throw new InvalidOperationException("Connection must be closed before address changing");
+            EndpointAddress = new EndpointAddress(address);
+            Address = address;
+        }
 
         protected T Client
         {

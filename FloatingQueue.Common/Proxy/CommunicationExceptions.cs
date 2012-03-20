@@ -22,6 +22,8 @@ namespace FloatingQueue.Common.Proxy
 
     public class ServerInternalException : ServerErrorExceptionBase
     {
+        public const int CODE = 500;
+
         public ServerInternalException(string message)
             : base(message)
         {
@@ -30,13 +32,18 @@ namespace FloatingQueue.Common.Proxy
 
     public class ServerInvalidArgumentException : ServerErrorExceptionBase
     {
-        public ServerInvalidArgumentException(string message) : base(message)
+        public const int CODE = 501;
+
+        public ServerInvalidArgumentException(string message)
+            : base(message)
         {
         }
     }
 
     public class ServerStreamAlreadyChangedException : ServerErrorExceptionBase
     {
+        public const int CODE = 400;
+
         public ServerStreamAlreadyChangedException(string message)
             : base(message)
         {
@@ -68,6 +75,8 @@ namespace FloatingQueue.Common.Proxy
 
     public class InvalidProtocolException : CommunicationErrorExceptionBase
     {
+        public const int CODE = 502;
+
         public InvalidProtocolException(string message) : base(message)
         {
         }

@@ -51,7 +51,7 @@ namespace FloatingQueue.Server
         {
             try
             {
-                InitializeCommunicationProvider(useTCP: false);
+                InitializeCommunicationProvider(useTCP: true);
 
                 var configuration = ParseConfiguration(args);
 
