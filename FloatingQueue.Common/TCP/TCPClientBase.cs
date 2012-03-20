@@ -6,6 +6,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.ServiceModel;
 using System.Text;
+using FloatingQueue.Common.Proxy;
 
 namespace FloatingQueue.Common.TCP
 {
@@ -116,6 +117,15 @@ namespace FloatingQueue.Common.TCP
             if (recvData.Command != request.Command)
                 throw new IOException("Invalid response command");
             return recvData;
+        }
+
+        protected void HandleErrorResponse(TCPBinaryReader response)
+        {
+            if (response.Command == -1)
+            {
+                var msg = response.ReadString();
+                throw new ServerInternalException(msg);      
+            }
         }
     }
 }
