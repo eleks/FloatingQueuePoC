@@ -177,7 +177,7 @@ namespace FloatingQueue.Common.TCP
                         {
                             break;
                         }
-                        if (req.Command == -1)
+                        if (req.Command == 0) // Close command
                         {
                             break;
                         }
@@ -222,8 +222,8 @@ namespace FloatingQueue.Common.TCP
     public abstract class TCPServerAutoDispatchBase<T> : TCPServerBase
         where T : class
     {
-        private readonly Dictionary<int, Func<T, TCPBinaryReader, TCPBinaryWriter, bool>> m_DispatchMap =
-            new Dictionary<int, Func<T, TCPBinaryReader, TCPBinaryWriter, bool>>();
+        private readonly Dictionary<uint, Action<T, TCPBinaryReader, TCPBinaryWriter>> m_DispatchMap =
+            new Dictionary<uint, Action<T, TCPBinaryReader, TCPBinaryWriter>>();
 
         private bool m_InitializingDispatcher;
 
@@ -233,11 +233,15 @@ namespace FloatingQueue.Common.TCP
         }
 
         protected void AddDispatcher(string name,
-                                     Func<T, TCPBinaryReader, TCPBinaryWriter, bool> dispatcherFunc)
+                                     Action<T, TCPBinaryReader, TCPBinaryWriter> dispatcherFunc)
         {
             if (!m_InitializingDispatcher)
                 throw new InvalidOperationException("AddDispatcher can be invoked only in Initializing stage");
-            m_DispatchMap.Add(name.GetHashCode(), dispatcherFunc);
+            var hash = (uint)name.GetHashCode();
+            hash &= 0x7FFFFFFF;
+            if (hash == 0)
+                throw new Exception("Invalid Method Name (hash == 0): " + name);
+            m_DispatchMap.Add(hash, dispatcherFunc);
         }
 
         private void DoInitializeDispatcher()
@@ -255,11 +259,12 @@ namespace FloatingQueue.Common.TCP
 
         public override bool Dispatch(TCPBinaryReader request, TCPBinaryWriter response)
         {
-            Func<T, TCPBinaryReader, TCPBinaryWriter, bool> method;
+            Action<T, TCPBinaryReader, TCPBinaryWriter> method;
             if (!m_DispatchMap.TryGetValue(request.Command, out method))
                 return false;
             var service = CreateService();
-            return method(service, request, response);
+            method(service, request, response);
+            return true;
         }
 
         protected abstract void InitializeDispatcher();

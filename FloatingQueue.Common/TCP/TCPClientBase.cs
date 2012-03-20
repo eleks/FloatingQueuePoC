@@ -87,7 +87,7 @@ namespace FloatingQueue.Common.TCP
 
         private void SendCloseCommand()
         {
-            var request = new TCPBinaryWriter(TCPCommunicationSignature.Request, -1);
+            var request = new TCPBinaryWriter(TCPCommunicationSignature.Request, 0);
             byte[] data;
             var dataSize = request.Finish(out data);
             var stream = m_TcpClient.GetStream();
@@ -98,7 +98,9 @@ namespace FloatingQueue.Common.TCP
 
         protected TCPBinaryWriter CreateRequest(string command)
         {
-            return new TCPBinaryWriter(TCPCommunicationSignature.Request, command.GetHashCode());
+            var hash = (uint) command.GetHashCode();
+            hash &= 0x7FFFFFFF;
+            return new TCPBinaryWriter(TCPCommunicationSignature.Request, hash);
         }
 
         protected TCPBinaryReader SendReceive(TCPBinaryWriter request)
@@ -121,7 +123,7 @@ namespace FloatingQueue.Common.TCP
 
         protected void HandleErrorResponse(TCPBinaryReader response)
         {
-            if (response.Command == -1)
+            if (response.Command == 0x80000000)
             {
                 var msg = response.ReadString();
                 throw new ServerInternalException(msg);      
