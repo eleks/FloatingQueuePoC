@@ -15,8 +15,6 @@ namespace FloatingQueue.Common.TCP
         void Initialize(string displayName, string address);
     }
 
-
-
     public abstract class TCPServerBase : TCPCommunicationObjectBase, ITCPServer
     {
         public string DisplayName { get; private set; }
@@ -65,10 +63,10 @@ namespace FloatingQueue.Common.TCP
                 m_Listener = new TcpListener(IPAddress.Any, m_Server.Port);
             }
 
-            protected override void DoRun()
+            protected override void RunCore()
             {
                 m_Listener.Start(100);
-                DbgLogger.WriteLine("Listening");
+                Logger.Instance.Info("Listening");
                 while (!IsStopping)
                 {
                     Thread.Sleep(0);
@@ -87,7 +85,7 @@ namespace FloatingQueue.Common.TCP
                     }
                     catch (SocketException e)
                     {
-                        DbgLogger.WriteLine("  Socket listener: " + e.Message);
+                        Logger.Instance.Debug("  Socket listener: " + e.Message);
                     }
                     // clean-up dead threads
                     m_WorkingThreads.RemoveAll(t => !t.IsAlive);
@@ -101,7 +99,7 @@ namespace FloatingQueue.Common.TCP
                     throw new Exception("m_workingThreads.Count > 0");
             }
 
-            protected override void DoStop()
+            protected override void StopCore()
             {
                 m_Listener.Stop();
             }
@@ -151,7 +149,7 @@ namespace FloatingQueue.Common.TCP
             }
 
 
-            protected override void DoRun()
+            protected override void RunCore()
             {
                 while (!IsStopping)
                 {
@@ -195,14 +193,14 @@ namespace FloatingQueue.Common.TCP
                 }
                 catch (Exception e)
                 {
-                    DbgLogger.LogException(e);
+                    Logger.Instance.Debug("{0}\n{1}", e.Message, e.StackTrace);
 
                 }
                 CloseAll();
                 m_TcpClient = null;
             }
 
-            protected override void DoStop()
+            protected override void StopCore()
             {
                 CloseAll();
                 m_NewClientAttachedEvent.Set();

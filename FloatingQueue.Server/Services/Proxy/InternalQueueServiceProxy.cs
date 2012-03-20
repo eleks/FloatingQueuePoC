@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.ServiceModel;
 using FloatingQueue.Common.Proxy;
 using FloatingQueue.Server.Exceptions;
@@ -10,9 +9,8 @@ namespace FloatingQueue.Server.Services.Proxy
 {
     public class InternalQueueServiceProxy : ProxyBase<IInternalQueueService>, IInternalQueueServiceProxy
     {
-        public InternalQueueServiceProxy(string address)
+        public InternalQueueServiceProxy(string address) : base(address)
         {
-            EndpointAddress = new EndpointAddress(address);
         }
 
         #region Standard Queue Service Functionality
@@ -109,12 +107,12 @@ namespace FloatingQueue.Server.Services.Proxy
 
         public void Open()
         {
-            DoOpen();
+            OpenClient();
         }
 
         public void Close()
         {
-            DoClose();
+            CloseClient();
         }
     }
 }

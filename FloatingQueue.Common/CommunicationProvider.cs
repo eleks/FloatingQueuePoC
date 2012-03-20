@@ -1,18 +1,13 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.ServiceModel;
-using System.Text;
 
 namespace FloatingQueue.Common
 {
     public interface ICommunicationProvider
     {
         T CreateChannel<T>(EndpointAddress endpointAddress);
-
         ICommunicationObject CreateHost<T>(string displayName, string address);
     }
-
 
     public static class CommunicationProvider
     {
@@ -22,7 +17,6 @@ namespace FloatingQueue.Common
         {
             get { return ms_Instance; }
         }
-
 
         public static void Init(ICommunicationProvider instance)
         {

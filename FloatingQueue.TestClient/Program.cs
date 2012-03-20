@@ -81,7 +81,7 @@ namespace FloatingQueue.TestClient
             using (proxy)
             {
                 bool stop = false;
-                proxy.OnConnectionLost += () => stop = true;
+                proxy.ConnectionLost += (sender, e) => stop = true;
                 for (int i = 0; i < requests && !stop; i++)
                 {
                     proxy.Push(ms_Rand.Next().ToString(), -1, ms_Rand.Next().ToString());
@@ -105,12 +105,12 @@ namespace FloatingQueue.TestClient
         public static bool TryCreateProxy(string address, bool keepConnectionOpened, out SafeQueueServiceProxy proxy)
         {
             proxy = new SafeQueueServiceProxy(address);
-            proxy.OnClientCallFailed += () => Logger.Instance.Warn("Call to {0} failed...", address);
-            proxy.OnConnectionLost += () => Logger.Instance.Error("Error! Connection to cluster is completely lost");
-            proxy.OnMasterChanged += newMasterAddress =>
+            //proxy.ClientCallFailed += () => Logger.Instance.Warn("Call to {0} failed...", address);//TODO: to be removed during refactoring
+            //proxy.ConnectionLost += () => Logger.Instance.Error("Error! Connection to cluster is completely lost");
+            proxy.MasterChanged += (sender, e) =>
                                           {
-                                              Logger.Instance.Info("New master set on {0}", newMasterAddress);
-                                              MasterAddress = newMasterAddress;
+                                              Logger.Instance.Info("New master set on {0}", e.NewMasterAdress);
+                                              MasterAddress = e.NewMasterAdress;
                                           };
             if (!proxy.Init(keepConnectionOpened))
             {
