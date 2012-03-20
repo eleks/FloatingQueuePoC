@@ -1,13 +1,11 @@
 ﻿using System.Collections.Generic;
-using System.ServiceModel;
 
 namespace FloatingQueue.Common.Proxy.QueueServiceProxy
 {
-    public class QueueServiceProxyBase : ProxyBase<IQueueService>, IQueueService
+    public abstract class QueueServiceProxyBase : ProxyBase<IQueueService>, IQueueService
     {
-        public QueueServiceProxyBase(string address)
+        protected QueueServiceProxyBase(string address) : base(address)
         {
-            EndpointAddress = new EndpointAddress(address);
         }
 
         public virtual void Push(string aggregateId, int version, object e)

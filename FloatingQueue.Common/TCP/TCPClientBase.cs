@@ -1,11 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Net;
 using System.Net.Sockets;
 using System.ServiceModel;
-using System.Text;
+using FloatingQueue.Common.Proxy;
 
 namespace FloatingQueue.Common.TCP
 {
@@ -86,7 +83,7 @@ namespace FloatingQueue.Common.TCP
 
         private void SendCloseCommand()
         {
-            var request = new TCPBinaryWriter(TCPCommunicationSignature.Request, -1);
+            var request = new TCPBinaryWriter(TCPCommunicationSignature.Request, 0);
             byte[] data;
             var dataSize = request.Finish(out data);
             var stream = m_TcpClient.GetStream();
@@ -97,7 +94,9 @@ namespace FloatingQueue.Common.TCP
 
         protected TCPBinaryWriter CreateRequest(string command)
         {
-            return new TCPBinaryWriter(TCPCommunicationSignature.Request, command.GetHashCode());
+            var hash = (uint) command.GetHashCode();
+            hash &= 0x7FFFFFFF;
+            return new TCPBinaryWriter(TCPCommunicationSignature.Request, hash);
         }
 
         protected TCPBinaryReader SendReceive(TCPBinaryWriter request)
@@ -116,6 +115,15 @@ namespace FloatingQueue.Common.TCP
             if (recvData.Command != request.Command)
                 throw new IOException("Invalid response command");
             return recvData;
+        }
+
+        protected void HandleErrorResponse(TCPBinaryReader response)
+        {
+            if (response.Command == 0x80000000)
+            {
+                var msg = response.ReadString();
+                throw new ServerInternalException(msg);      
+            }
         }
     }
 }

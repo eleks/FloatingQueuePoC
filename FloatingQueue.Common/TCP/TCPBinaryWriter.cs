@@ -1,19 +1,17 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Text;
 
 namespace FloatingQueue.Common.TCP
 {
     public class TCPBinaryWriter
     {
-        public readonly int Command;
+        public readonly uint Command;
         private readonly MemoryStream m_Stream;
         private BinaryWriter m_Writer;
         private int m_Size;
 
-        public TCPBinaryWriter(int signature, int command)
+        public TCPBinaryWriter(uint signature, uint command)
         {
             Command = command;
             //
@@ -59,6 +57,13 @@ namespace FloatingQueue.Common.TCP
             EnsureWriteAllowed();
             m_Writer.Write(value);
             m_Size += sizeof(int);
+        }
+
+        public void Write(uint value)
+        {
+            EnsureWriteAllowed();
+            m_Writer.Write(value);
+            m_Size += sizeof(uint);
         }
 
         public void Write(byte[] data)

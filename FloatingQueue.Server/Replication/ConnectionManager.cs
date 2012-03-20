@@ -1,4 +1,6 @@
 ﻿using System;
+using System.IO;
+using System.Net.Sockets;
 using System.ServiceModel;
 using System.Threading;
 
@@ -76,10 +78,20 @@ namespace FloatingQueue.Server.Replication
                 //catch (ObjectDisposedException) //todo
                 //{
                 //}
+                catch(SocketException)
+                {
+                    FireConnectionLoss(node.ServerId);
+                    Core.Server.Log.Warn("Replication at {0} failed. (SocketException) Node is dead", node.InternalAddress);
+                }
+                catch (IOException)
+                {
+                    FireConnectionLoss(node.ServerId);
+                    Core.Server.Log.Warn("Replication at {0} failed. (IOException) Node is dead", node.InternalAddress);
+                }
                 catch (CommunicationException)
                 {
                     FireConnectionLoss(node.ServerId);
-                    Core.Server.Log.Warn("Replication at {0} failed. Node is dead", node.InternalAddress);
+                    Core.Server.Log.Warn("Replication at {0} failed. (CommunicationException) Node is dead", node.InternalAddress);
                 }
                 catch (Exception ex)
                 {

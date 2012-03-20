@@ -1,18 +1,33 @@
 ﻿using System;
 using System.ServiceModel;
-using System.ServiceModel.Channels;
 
 namespace FloatingQueue.Common.Proxy
 {
-    public abstract class ProxyBase<T> :  IDisposable
+    public abstract class ProxyBase<T> :  IDisposable 
         where T : class
     {
-        protected EndpointAddress EndpointAddress;
-
         private T m_Client;
+
+        protected ProxyBase(string address)
+        {
+            if(String.IsNullOrEmpty(address))
+            {
+                throw new ArgumentNullException(address);
+            }
+
+            EndpointAddress = new EndpointAddress(address);
+        }
+
+        public EndpointAddress EndpointAddress { get; private set; }
+
         protected T Client
         {
             get { return m_Client ?? (m_Client = CreateClient()); }
+        }
+
+        private T CreateClient()
+        {
+            return CommunicationProvider.Instance.CreateChannel<T>(EndpointAddress);
         }
 
         private ICommunicationObject Channel
@@ -26,47 +41,40 @@ namespace FloatingQueue.Common.Proxy
             }
         }
 
-        protected virtual T CreateClient()
-        {
-            return CommunicationProvider.Instance.CreateChannel<T>(EndpointAddress);
-        }
-
         public void Dispose()
         {
-            DoClose();
+            CloseClient();
         }
 
-        protected void DoOpen()
+        protected void OpenClient()
         {
             Channel.Open();
         }
 
-        protected void DoClose()
+        protected void CloseClient()
         {
-            if (m_Client == null)
-                return;
-
-            bool abort = false;
-            try
+            if (m_Client != null)
             {
-                if (Channel.State == CommunicationState.Faulted)
+                bool abort = false;
+                try
+                {
+                    if (Channel.State == CommunicationState.Faulted)
+                        abort = true;
+                    else
+                        Channel.Close();
+                }
+                catch (CommunicationException)
+                {
                     abort = true;
-                else
-                    Channel.Close();
+                }
+                catch (TimeoutException)
+                {
+                    abort = true;
+                }
+                if (abort)
+                    Channel.Abort();
+                m_Client = null;
             }
-            catch (CommunicationException)
-            {
-                abort = true;
-            }
-            catch (TimeoutException)
-            {
-                abort = true;
-            }
-            if (abort)
-                Channel.Abort();
-            m_Client = null;
         }
-
-
     }
 }

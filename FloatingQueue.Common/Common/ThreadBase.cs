@@ -1,49 +1,45 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading;
 
 namespace FloatingQueue.Common.Common
 {
-    public static class DbgLogger
+    public enum ThreadState
     {
-        public static void WriteLine(string format, params object[] args)
-        {
-            Console.Out.WriteLine(format, args);
-        }
-
-        public static void LogException(Exception e)
-        {
-            while (e != null)
-            {
-                Console.Out.WriteLine("Exception: " + e.Message);
-                Console.Out.WriteLine(e.StackTrace);
-                e = e.InnerException;
-            }
-        }
+        NotStarted,
+        Starting,
+        Working,
+        Stopped
     }
-
 
     public abstract class ThreadBase
     {
-        public enum ThreadState { NotStarted, Starting, Working, Stopped };
-
         private readonly Thread m_Thread;
         private ThreadState m_State;
 
         protected ThreadBase(string threadName = null)
         {
             m_Thread = new Thread(Run);
+
             if (threadName != null)
                 m_Thread.Name = threadName;
         }
 
-        public void Start(Action<Exception> onThreadFailed)
+        public bool IsStopping { get; private set; }
+
+        public bool IsAlive
         {
-            if (onThreadFailed != null)
-                OnThreadFailed += onThreadFailed;
-            DoStart();
+            get { return m_State != ThreadState.NotStarted && m_State != ThreadState.Stopped; }
+        }
+
+        protected Action<Exception> ThreadFailed { get; set; }
+
+        public void Start(Action<Exception> threadFailedHandler)
+        {
+            if (threadFailedHandler != null)
+                ThreadFailed += threadFailedHandler;
+
+            StartCore();
+
             m_State = ThreadState.Starting;
             m_Thread.Start();
         }
@@ -54,23 +50,16 @@ namespace FloatingQueue.Common.Common
             Exception ex = null;
             try
             {
-                DoStop();
+                StopCore();
             }
             catch (Exception e)
             {
-                DbgLogger.WriteLine("=== UNHANDLED THREAD STOPPING ERROR === \r\n=== {0} === ", e.Message);
-                DbgLogger.LogException(e);
+                Logger.Instance.Debug("=== UNHANDLED THREAD STOPPING ERROR === \r\n=== {0} === ", e.Message);
+                Logger.Instance.Debug("{0}\n{1}", e.Message, e.StackTrace);
                 ex = e;
             }
             if (ex != null)
-                DoThreadFailed(ex);
-        }
-
-        public bool IsStopping { get; private set; }
-
-        public bool IsAlive
-        {
-            get { return m_State != ThreadState.NotStarted && m_State != ThreadState.Stopped; }
+                OnThreadFailed(ex);
         }
 
         public void Wait()
@@ -85,45 +74,44 @@ namespace FloatingQueue.Common.Common
             m_State = ThreadState.Working;
             try
             {
-                DoRun();
+                RunCore();
             }
             catch (Exception e)
             {
-                DbgLogger.WriteLine("=== UNHANDLED THREAD RUNNING ERROR === \r\n=== {0} === ", e.Message);
-                DbgLogger.LogException(e);
+                Logger.Instance.Debug("=== UNHANDLED THREAD RUNNING ERROR === \r\n=== {0} === ", e.Message);
+                Logger.Instance.Debug("{0}\n{1}", e.Message, e.StackTrace);
                 ex = e;
             }
             m_State = ThreadState.Stopped;
+
             if (ex != null)
-                DoThreadFailed(ex);
+                OnThreadFailed(ex);
         }
 
-        protected Action<Exception> OnThreadFailed { get; set; }
-
-        protected void DoThreadFailed(Exception e)
+        protected void OnThreadFailed(Exception e)
         {
-            Action<Exception> onThreadFailed = OnThreadFailed;
-            if (onThreadFailed == null)
-                return;
-
-            try
+            var handler = ThreadFailed;
+            if (handler != null)
             {
-                onThreadFailed(e);
-            }
-            catch (Exception ex)
-            {
-                DbgLogger.WriteLine("=== THREAD FAILED HANDLER ERROR === \r\n=== {0} === ", e.Message);
-                DbgLogger.LogException(ex);
+                try
+                {
+                    handler(e);
+                }
+                catch (Exception ex)
+                {
+                    Logger.Instance.Debug("=== THREAD FAILED HANDLER ERROR === \r\n=== {0} === ", e.Message);
+                    Logger.Instance.Debug("{0}\n{1}", ex.Message, ex.StackTrace);
+                }
             }
         }
 
-        protected virtual void DoStart()
+        protected virtual void StartCore()
         {
         }
 
-        protected abstract void DoRun();
+        protected abstract void RunCore();
 
-        protected virtual void DoStop()
+        protected virtual void StopCore()
         {
         }
 

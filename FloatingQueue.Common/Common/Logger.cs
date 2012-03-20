@@ -32,11 +32,7 @@ namespace FloatingQueue.Common.Common
         {
             get
             {
-                if (ms_Instance == null)
-                {
-                    ms_Instance = new Logger();
-                }
-                return ms_Instance;
+                return ms_Instance ?? (ms_Instance = new Logger());
             }
         }
 

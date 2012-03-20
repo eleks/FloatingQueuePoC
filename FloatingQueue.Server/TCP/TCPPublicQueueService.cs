@@ -19,16 +19,15 @@ namespace FloatingQueue.Server.TCP
             AddDispatcher("GetClusterMetadata", GetClusterMetadata);
         }
 
-        protected bool Push(IQueueService service, TCPBinaryReader request, TCPBinaryWriter response)
+        protected void Push(IQueueService service, TCPBinaryReader request, TCPBinaryWriter response)
         {
             var aggregateId = request.ReadString();
             var version = request.ReadInt32();
             var e = request.ReadObject();
             service.Push(aggregateId, version, e);
-            return true;
         }
 
-        protected bool TryGetNext(IQueueService service, TCPBinaryReader request, TCPBinaryWriter response)
+        protected void TryGetNext(IQueueService service, TCPBinaryReader request, TCPBinaryWriter response)
         {
             var aggregateId = request.ReadString();
             var version = request.ReadInt32();
@@ -38,10 +37,9 @@ namespace FloatingQueue.Server.TCP
             response.Write(result);
             if (result)
                 response.WriteObject(next);
-            return true;
         }
 
-        protected bool GetAllNext(IQueueService service, TCPBinaryReader request, TCPBinaryWriter response)
+        protected void GetAllNext(IQueueService service, TCPBinaryReader request, TCPBinaryWriter response)
         {
             var aggregateId = request.ReadString();
             var version = request.ReadInt32();
@@ -52,10 +50,9 @@ namespace FloatingQueue.Server.TCP
             {
                 response.WriteObject(result[i]);
             }
-            return true;
         }
 
-        protected bool GetClusterMetadata(IQueueService service, TCPBinaryReader request, TCPBinaryWriter response)
+        protected void GetClusterMetadata(IQueueService service, TCPBinaryReader request, TCPBinaryWriter response)
         {
             var result = service.GetClusterMetadata();
             //
@@ -65,7 +62,6 @@ namespace FloatingQueue.Server.TCP
                 response.Write(result.Nodes[i].Address);
                 response.Write(result.Nodes[i].IsMaster);
             }
-            return true;
         }
     }
 

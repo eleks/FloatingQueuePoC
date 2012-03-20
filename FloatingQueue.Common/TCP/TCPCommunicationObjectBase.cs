@@ -1,8 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.ServiceModel;
-using System.Text;
 
 namespace FloatingQueue.Common.TCP
 {
@@ -73,8 +70,9 @@ namespace FloatingQueue.Common.TCP
 
     public static class TCPCommunicationSignature
     {
-        public static readonly int Request = 0x34567890;
-        public static readonly int Response = 0x67234519;
+        public static readonly uint Request = 0x34567890;
+        public static readonly uint Response = 0x67234519;
+        public static readonly uint EndOfStream = 0xFFEEDDBB;
     }
 
 

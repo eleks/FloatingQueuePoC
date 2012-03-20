@@ -4,26 +4,27 @@ using System.IO;
 using System.Linq;
 using System.Net.Sockets;
 using System.ServiceModel;
-using System.Threading;
 
 namespace FloatingQueue.Common.Proxy.QueueServiceProxy
 {
+    public class MasterChangedEventArgs : EventArgs
+    {
+        public MasterChangedEventArgs(string newMasterAdress)
+        {
+            NewMasterAdress = newMasterAdress;
+        }
+
+        public string NewMasterAdress { get; private set; }
+    }
+
     public class SafeQueueServiceProxy : QueueServiceProxyBase
     {
-        public delegate void ClientCallFailedHandler();
-        public delegate void MasterChangedHandler(string newMasterAddress);
-        public delegate void ConnectionLostHandler();
-
-        public event MasterChangedHandler OnMasterChanged;
-        public event ClientCallFailedHandler OnClientCallFailed;
-        public event ConnectionLostHandler OnConnectionLost;
-
         private bool m_KeepConnectionOpened;
         private bool m_CancelFireClientCall = false;
         private bool m_Initialized;
         private bool m_ConnectionLost = false;
 
-        //todo: save information that address is dead
+        //todo: save information that address is dead and try to connect to it in case all current nodes are dead
         private static readonly List<string> ms_SharedAddressPool = new List<string>();
         private static readonly object ms_SyncRoot = new object();
 
@@ -35,6 +36,10 @@ namespace FloatingQueue.Common.Proxy.QueueServiceProxy
             //a.Faulted += (sender, args) => { var b = 5; };
         }
 
+        public event EventHandler<MasterChangedEventArgs> MasterChanged;
+        public event EventHandler ClientCallFailed;
+        public event EventHandler ConnectionLost;
+
         public bool Init(bool keepConnectionOpened = false)
         {
             if (m_Initialized)
@@ -42,8 +47,8 @@ namespace FloatingQueue.Common.Proxy.QueueServiceProxy
 
             m_Initialized = true;
             m_KeepConnectionOpened = keepConnectionOpened;
-            OnClientCallFailed += HandleClientCallFailed;
-            OnConnectionLost += HandleConnectionLost;
+            ClientCallFailed += HandleClientCallFailed;
+            ConnectionLost += HandleConnectionLost;
 
             var metadata = this.GetClusterMetadata();
             if (metadata == null)
@@ -94,25 +99,7 @@ namespace FloatingQueue.Common.Proxy.QueueServiceProxy
             failoverAction: () => null);
         }
 
-        private void FireMasterChanged(string newMasterAddress)
-        {
-            if (OnMasterChanged != null)
-                OnMasterChanged(newMasterAddress);
-        }
-
-        private void FireConnectionLost()
-        {
-            if (OnConnectionLost != null)
-                OnConnectionLost();
-        }
-
-        private void FireClientCallFailed()
-        {
-            if (OnClientCallFailed != null)
-                OnClientCallFailed();
-        }
-
-        private void HandleClientCallFailed()
+        private void HandleClientCallFailed(object sender, EventArgs e)
         {
             bool success = false;
             List<string> newAddresses = null;
@@ -123,10 +110,10 @@ namespace FloatingQueue.Common.Proxy.QueueServiceProxy
             string[] addressPool = GetSharedAddresses();
             foreach (var nodeAddress in addressPool)
             {
-                //todo: wrap this in method
-                DoClose();
-                EndpointAddress = new EndpointAddress(nodeAddress);
-                CreateClient();
+
+                CloseClient();
+                //EndpointAddress = new EndpointAddress(node.Address);//TODO: to be removed during refactoring
+                //CreateClient();
 
                 var metadata = this.GetClusterMetadata();
                 if (metadata == null)
@@ -139,9 +126,9 @@ namespace FloatingQueue.Common.Proxy.QueueServiceProxy
                 if (master == null)
                     throw new ApplicationException("Critical Error! There's no master in cluster");
 
-                DoClose();
-                EndpointAddress = new EndpointAddress(master.Address);
-                CreateClient();
+                CloseClient();
+                //EndpointAddress = new EndpointAddress(master.Address);//TODO: to be removed during refactoring
+                //CreateClient();
 
                 var testCall = this.GetClusterMetadata();
                 if (testCall == null || testCall.Nodes == null)
@@ -160,16 +147,16 @@ namespace FloatingQueue.Common.Proxy.QueueServiceProxy
 
             if (success)
             {
-                FireMasterChanged(newMasterAddress);
+                OnMasterChanged(this, new MasterChangedEventArgs(newMasterAddress));
                 AddSharedAddresses(newAddresses);
             }
             else
             {
-                FireConnectionLost();
+                OnConnectionLost(this, EventArgs.Empty);
             }
         }
 
-        private void HandleConnectionLost()
+        private void HandleConnectionLost(object sender, EventArgs e)
         {
             m_ConnectionLost = true;
         }
@@ -191,34 +178,61 @@ namespace FloatingQueue.Common.Proxy.QueueServiceProxy
             {
                 throw;
             }
-            catch(IOException)
+            catch (IOException)
             {
                 if (!m_CancelFireClientCall)
-                    FireClientCallFailed();
+                    OnClientCallFailed(this, EventArgs.Empty);
                 return failoverAction();
             }
-            catch(SocketException)
+            catch (SocketException)
             {
                 if (!m_CancelFireClientCall)
-                    FireClientCallFailed();
+                    OnClientCallFailed(this, EventArgs.Empty);
                 return failoverAction();
             }
             catch (CommunicationException)
             {
                 if (!m_CancelFireClientCall)
-                    FireClientCallFailed();
+                    OnClientCallFailed(this, EventArgs.Empty);
                 return failoverAction();
             }
             catch (TimeoutException)
             {
                 if (!m_CancelFireClientCall)
-                    FireClientCallFailed();
+                    OnClientCallFailed(this, EventArgs.Empty);
                 return failoverAction();
             }
             finally
             {
                 if (!m_KeepConnectionOpened)
-                    DoClose();
+                    CloseClient();
+            }
+        }
+
+        protected virtual void OnMasterChanged(object sender, MasterChangedEventArgs e)
+        {
+            var handler = MasterChanged;
+            if (handler != null)
+            {
+                handler(sender, e);
+            }
+        }
+
+        protected virtual void OnClientCallFailed(object sender, EventArgs e)
+        {
+            var handler = ClientCallFailed;
+            if (handler != null)
+            {
+                handler(sender, e);
+            }
+        }
+
+        protected virtual void OnConnectionLost(object sender, EventArgs e)
+        {
+            var handler = ConnectionLost;
+            if (handler != null)
+            {
+                handler(sender, e);
             }
         }
 
