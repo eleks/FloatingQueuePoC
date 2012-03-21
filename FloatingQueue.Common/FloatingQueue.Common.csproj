@@ -68,7 +68,7 @@
     <Compile Include="Proxy\QueueServiceProxy\SafeQueueServiceProxy.cs" />
     <Compile Include="IQueueService.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Proxy\QueueServiceProxy\QueueServiceProxyBase.cs" />
+    <Compile Include="Proxy\QueueServiceProxy\QueueServiceProxy.cs" />
     <Compile Include="Proxy\CommunicationExceptions.cs" />
     <Compile Include="TCPProvider\TCPCommunicationProvider.cs" />
     <Compile Include="TCPProvider\TCPQueueServiceProxy.cs" />

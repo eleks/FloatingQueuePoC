@@ -1,9 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Net.Sockets;
-using System.ServiceModel;
 
 namespace FloatingQueue.Common.Proxy.QueueServiceProxy
 {
@@ -17,19 +14,20 @@ namespace FloatingQueue.Common.Proxy.QueueServiceProxy
         public string NewMasterAdress { get; private set; }
     }
 
-    public class SafeQueueServiceProxy : QueueServiceProxyBase
+    public class SafeQueueServiceProxy : IQueueService, IDisposable
     {
         //todo: save information that address is dead and try to connect to it in case all current nodes are dead
-        private static ClusterMetadata ms_SharedClusterMetadata = null;
+        private static ClusterMetadata ms_SharedClusterMetadata;
         private static readonly object ms_SyncRoot = new object();
 
+        private readonly QueueServiceProxy m_Proxy;
         private bool m_KeepConnectionOpened;
         private bool m_Initialized;
         private bool m_NoRetryMode;
 
         public SafeQueueServiceProxy(string address)
-            : base(address)
         {
+            m_Proxy = new QueueServiceProxy(address);
             //todo: think about using WCF's tools to detect failures
             //var a = Client as ICommunicationObject;
             //a.Faulted += (sender, args) => { var b = 5; };
@@ -46,15 +44,17 @@ namespace FloatingQueue.Common.Proxy.QueueServiceProxy
             ConnectToMaster();
         }
 
-        public override void Push(string aggregateId, int version, object e)
+        public void Dispose()
         {
-            SafeCall(() =>
-            {
-                base.Push(aggregateId, version, e);
-            });
+            m_Proxy.CloseClient();
         }
 
-        public override bool TryGetNext(string aggregateId, int version, out object next)
+        public void Push(string aggregateId, int version, object e)
+        {
+            SafeCall(() => m_Proxy.Push(aggregateId, version, e));
+        }
+
+        public bool TryGetNext(string aggregateId, int version, out object next)
         {
             // can't use ref or out inside lambda
             next = null;
@@ -64,24 +64,24 @@ namespace FloatingQueue.Common.Proxy.QueueServiceProxy
             SafeCall(() =>
             {
                 object n;
-                result = base.TryGetNext(aggregateId, version, out n);
+                result = m_Proxy.TryGetNext(aggregateId, version, out n);
                 hack = n;
             });
             next = hack;
             return result;
         }
 
-        public override IEnumerable<object> GetAllNext(string aggregateId, int version)
+        public IEnumerable<object> GetAllNext(string aggregateId, int version)
         {
             IEnumerable<object> result = null;
-            SafeCall(() => result = base.GetAllNext(aggregateId, version));
+            SafeCall(() => result = m_Proxy.GetAllNext(aggregateId, version));
             return result;
         }
 
-        public override ClusterMetadata GetClusterMetadata()
+        public ClusterMetadata GetClusterMetadata()
         {
             ClusterMetadata result = null;
-            SafeCall(() => result = base.GetClusterMetadata());
+            SafeCall(() => result = m_Proxy.GetClusterMetadata());
             return result;
         }
 
@@ -128,7 +128,7 @@ namespace FloatingQueue.Common.Proxy.QueueServiceProxy
             finally
             {
                 if (!m_KeepConnectionOpened)
-                    CloseClient();
+                    m_Proxy.CloseClient();
             }
         }
 
@@ -147,11 +147,11 @@ namespace FloatingQueue.Common.Proxy.QueueServiceProxy
                     var master = meta.Nodes.SingleOrDefault(n => n.IsMaster);
                     if (master == null)
                         throw new ServerIsReadonlyException("No master found");
-                    if (master.Address != Address)
+                    if (master.Address != m_Proxy.Address)
                     {
                         meta = ObtainNewMetadata(master.Address); // reconnect to obtained master and take its metadata
                         master = meta.Nodes.SingleOrDefault(n => n.IsMaster);
-                        if (master == null || master.Address != Address)
+                        if (master == null || master.Address != m_Proxy.Address)
                             throw new Exception("Master say - he is not a master ???");
                     }
                     return meta;
@@ -186,15 +186,15 @@ namespace FloatingQueue.Common.Proxy.QueueServiceProxy
             }
 
             // try to use specified address (if provided)
-            if (newMetadata == null && Address != null)
+            if (newMetadata == null && m_Proxy.Address != null)
             {
-                newMetadata = connectToMasterViaAddrFunc(Address);
+                newMetadata = connectToMasterViaAddrFunc(m_Proxy.Address);
             }
 
             // Oops! we still havn't found any valid master
             if (newMetadata == null)
             {
-                CloseClient(); // ensure client is closed
+                m_Proxy.CloseClient(); // ensure client is closed
                 if (atLeastOneConnectionHasBeenEsteblished)
                     throw lastError;
                 throw new ServerUnavailableException("No any server has been found");
@@ -204,15 +204,15 @@ namespace FloatingQueue.Common.Proxy.QueueServiceProxy
 
         private ClusterMetadata ObtainNewMetadata(string address)
         {
-            CloseClient(); // ensure prev client is closed
-            SetNewAddress(address);
+            m_Proxy.CloseClient(); // ensure prev client is closed
+            m_Proxy.SetNewAddress(address);
             //
             ClusterMetadata result;
             var prevNoRetryMode = m_NoRetryMode;
             m_NoRetryMode = true;
             try
             {
-                result = this.GetClusterMetadata();
+                result = GetClusterMetadata();
             }
             finally
             {

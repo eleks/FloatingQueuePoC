@@ -2,9 +2,9 @@
 
 namespace FloatingQueue.Common.Proxy.QueueServiceProxy
 {
-    public abstract class QueueServiceProxyBase : ProxyBase<IQueueService>, IQueueService
+    public class QueueServiceProxy : ProxyBase<IQueueService>, IQueueService
     {
-        protected QueueServiceProxyBase(string address) : base(address)
+        public QueueServiceProxy(string address) : base(address)
         {
         }
 

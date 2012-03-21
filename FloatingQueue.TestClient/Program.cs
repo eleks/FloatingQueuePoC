@@ -96,7 +96,7 @@ namespace FloatingQueue.TestClient
             }
         }
 
-        static void DoPush(QueueServiceProxyBase proxy, string[] args)
+        static void DoPush(IQueueService proxy, string[] args)
         {
             try
             {
