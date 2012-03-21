@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.ServiceModel;
 using FloatingQueue.Common;
+using FloatingQueue.Common.TCP;
 using FloatingQueue.Common.TCPProvider;
 using FloatingQueue.Common.WCF;
 using FloatingQueue.Server.Core;
@@ -18,8 +19,8 @@ namespace FloatingQueue.Server
 {
     class Program
     {
-        private static ICommunicationObject ms_InternalHost;
-        private static ICommunicationObject ms_PublicHost;
+        private static CommunicationObjectBase ms_InternalHost;
+        private static CommunicationObjectBase ms_PublicHost;
         private static List<string> ms_NodesAddresses;
 
         static void Main(string[] args)
@@ -203,7 +204,7 @@ namespace FloatingQueue.Server
             return configuration;
         }
 
-        private static ICommunicationObject CreateHost<T>(string address)
+        private static CommunicationObjectBase CreateHost<T>(string address)
         {
             var host = CommunicationProvider.Instance.CreateHost<T>(typeof(T).Name, address);
             return host;

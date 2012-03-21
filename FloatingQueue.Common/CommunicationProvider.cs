@@ -1,5 +1,6 @@
 ﻿using System;
 using System.ServiceModel;
+using FloatingQueue.Common.TCP;
 
 namespace FloatingQueue.Common
 {
@@ -14,7 +15,11 @@ namespace FloatingQueue.Common
     public interface ICommunicationProvider
     {
         T CreateChannel<T>(EndpointAddress endpointAddress);
-        ICommunicationObject CreateHost<T>(string displayName, string address);
+        CommunicationObjectBase CreateHost<T>(string displayName, string address);
+        //
+        void OpenChannel<T>(T client);
+        void CloseChannel<T>(T client);
+        //
         void SafeNetworkCall(Action action);
     }
 

@@ -16,7 +16,7 @@ namespace FloatingQueue.Common.TCP
         void Initialize(string displayName, string address);
     }
 
-    public abstract class TCPServerBase : TCPCommunicationObjectBase, ITCPServer
+    public abstract class TCPServerBase : CommunicationObjectBase, ITCPServer
     {
         public string DisplayName { get; private set; }
         public int Port { get; private set; }
@@ -40,11 +40,6 @@ namespace FloatingQueue.Common.TCP
         public override void Close()
         {
             m_ListenerThread.Stop();
-        }
-
-        public override void Abort()
-        {
-            Close();
         }
 
         // Implementation

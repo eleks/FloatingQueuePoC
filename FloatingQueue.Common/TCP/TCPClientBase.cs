@@ -12,7 +12,7 @@ namespace FloatingQueue.Common.TCP
         void Initialize(EndpointAddress endpointAddress);
     }
 
-    public abstract class TCPClientBase : TCPCommunicationObjectBase, ITCPClient
+    public abstract class TCPClientBase : CommunicationObjectBase, ITCPClient
     {
         private string m_Host;
         private int m_Port;
@@ -55,11 +55,6 @@ namespace FloatingQueue.Common.TCP
                 SendCloseCommand();
                 m_TcpClient.Close();
             }
-        }
-
-        public override void Abort()
-        {
-            Close();
         }
 
         private int ReadBuffer(byte[] buf)

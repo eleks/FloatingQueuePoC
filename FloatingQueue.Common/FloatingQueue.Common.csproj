@@ -74,7 +74,7 @@
     <Compile Include="TCPProvider\TCPQueueServiceProxy.cs" />
     <Compile Include="TCP\TCPBinaryReader.cs" />
     <Compile Include="TCP\TCPClientBase.cs" />
-    <Compile Include="TCP\TCPCommunicationObjectBase.cs" />
+    <Compile Include="TCP\CommunicationObjectBase.cs" />
     <Compile Include="TCP\TCPBinaryWriter.cs" />
     <Compile Include="TCP\TCPServerBase.cs" />
     <Compile Include="WCFProvider\WCFCommunicationProvider.cs" />

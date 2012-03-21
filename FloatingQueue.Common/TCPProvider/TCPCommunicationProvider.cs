@@ -25,7 +25,7 @@ namespace FloatingQueue.Common.TCPProvider
             return (T)(object) res;
         }
 
-        public ICommunicationObject CreateHost<T>(string displayName, string address)
+        public CommunicationObjectBase CreateHost<T>(string displayName, string address)
         {
             Func<TCPServerBase> ctor;
             if (!m_HostMap.TryGetValue(typeof(T), out ctor))
@@ -33,6 +33,26 @@ namespace FloatingQueue.Common.TCPProvider
             var res = ctor();
             res.Initialize(displayName, address);
             return res;
+        }
+
+        public void OpenChannel<T>(T client)
+        {
+            var channel = GetCommunicationObject(client);
+            channel.Open();
+        }
+
+        public void CloseChannel<T>(T client)
+        {
+            var channel = GetCommunicationObject(client);
+            channel.Close();
+        }
+
+        private static CommunicationObjectBase GetCommunicationObject<T>(T client)
+        {
+            var channel = client as CommunicationObjectBase;
+            if (channel == null)
+                throw new ApplicationException("Client must implement TCPCommunicationObjectBase interface");
+            return channel;
         }
 
         public void SafeNetworkCall(Action action)

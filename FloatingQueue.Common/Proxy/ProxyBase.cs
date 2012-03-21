@@ -37,17 +37,6 @@ namespace FloatingQueue.Common.Proxy
             return CommunicationProvider.Instance.CreateChannel<T>(EndpointAddress);
         }
 
-        private ICommunicationObject Channel
-        {
-            get
-            {
-                var channel = Client as ICommunicationObject;
-                if (channel == null)
-                    throw new ApplicationException("Client must implement ICommunicationObject interface");
-                return channel;
-            }
-        }
-
         public void Dispose()
         {
             CloseClient();
@@ -55,31 +44,14 @@ namespace FloatingQueue.Common.Proxy
 
         protected void OpenClient()
         {
-            Channel.Open();
+            CommunicationProvider.Instance.OpenChannel(Client);
         }
 
         public void CloseClient()
         {
             if (m_Client != null)
             {
-                bool abort = false;
-                try
-                {
-                    if (Channel.State == CommunicationState.Faulted)
-                        abort = true;
-                    else
-                        Channel.Close();
-                }
-                catch (CommunicationException)
-                {
-                    abort = true;
-                }
-                catch (TimeoutException)
-                {
-                    abort = true;
-                }
-                if (abort)
-                    Channel.Abort();
+                CommunicationProvider.Instance.CloseChannel(m_Client);
                 m_Client = null;
             }
         }
