@@ -33,9 +33,24 @@ namespace FloatingQueue.Server
 
             try
             {
-                if (Initialize(args))
-                if (RunHosts())
-                if (JoinCluster())
+                if (!Initialize(args))
+                {
+                    Core.Server.Log.Error("Couldn't initialize server.");
+                    Console.ReadLine();
+                    return;
+                }
+                if (!RunHosts())
+                {
+                    Core.Server.Log.Error("Couldn't run hosts.");
+                    Console.ReadLine();
+                    return;
+                }
+                if (!JoinCluster())
+                {
+                    Core.Server.Log.Error("Couldn't connect to cluster");
+                    Console.ReadLine();
+                    return;
+                }
                 WaitForTerminate();
             }
             catch (Exception ex)
@@ -62,7 +77,7 @@ namespace FloatingQueue.Server
             }
             catch (Exception ex)
             {
-                Core.Server.Log.Error("Couldn't initialize server{0}{1}{0}{2}", Environment.NewLine, ex.Message, ex.StackTrace);
+                Core.Server.Log.Warn("Error while initializing server{0}{1}{0}{2}", Environment.NewLine, ex.Message, ex.StackTrace);
                 return false;
             }
             return true;
@@ -85,7 +100,7 @@ namespace FloatingQueue.Server
             }
             catch (Exception ex)
             {
-                Core.Server.Log.Error("Couldn't run hosts{0}{1}{0}{2}", Environment.NewLine, ex.Message, ex.StackTrace); ;
+                Core.Server.Log.Warn("Error while running hosts{0}{1}{0}{2}", Environment.NewLine, ex.Message, ex.StackTrace); ;
                 return false;
             }
             return true;
@@ -110,7 +125,7 @@ namespace FloatingQueue.Server
             }
             catch (BadConfigurationException ex)
             {
-                Core.Server.Log.Error("Couldn't join cluster{0}{1}{0}{2}", Environment.NewLine, ex.Message, ex.StackTrace);
+                Core.Server.Log.Warn("Error while joining cluster{0}{1}{0}{2}", Environment.NewLine, ex.Message, ex.StackTrace);
                 return false;
             }
             return true;
@@ -130,7 +145,7 @@ namespace FloatingQueue.Server
             }
             catch (Exception ex)
             {
-                Core.Server.Log.Error("Didn't terminate hosts properly{0}{1}{0}{2}", Environment.NewLine, ex.Message, ex.StackTrace);
+                Core.Server.Log.Warn("Didn't terminate hosts properly{0}{1}{0}{2}", Environment.NewLine, ex.Message, ex.StackTrace);
                 throw;
             }
         }
