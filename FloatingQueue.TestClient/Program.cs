@@ -80,11 +80,18 @@ namespace FloatingQueue.TestClient
                 return;
             using (proxy)
             {
-                bool stop = false;
-                //proxy.ConnectionLost += (sender, e) => stop = true;
-                for (int i = 0; i < requests && !stop; i++)
+                int failed = 0; // sample counter - just to stop if many errors occured
+                for (int i = 0; i < requests && failed < 3; i++)
                 {
-                    proxy.Push(ms_Rand.Next().ToString(), -1, ms_Rand.Next().ToString());
+                    try
+                    {
+                        proxy.Push(ms_Rand.Next().ToString(), -1, ms_Rand.Next().ToString());
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.Instance.Error("Unhandled Exception", ex);
+                        failed++;
+                    }
                 }
             }
         }

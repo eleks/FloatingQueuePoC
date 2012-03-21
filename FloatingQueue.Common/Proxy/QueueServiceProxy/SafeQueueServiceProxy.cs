@@ -111,7 +111,7 @@ namespace FloatingQueue.Common.Proxy.QueueServiceProxy
                     }
                     catch (ConnectionErrorException)
                     {
-                        if (retry == maxRetry)
+                        if (retry == maxRetry - 1)
                             throw;
                     }
                     retry++;
