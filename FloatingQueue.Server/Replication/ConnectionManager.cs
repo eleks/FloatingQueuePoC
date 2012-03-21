@@ -75,7 +75,7 @@ namespace FloatingQueue.Server.Replication
                     node.Proxy.Push(aggregateId, version, e);
                     replicas++;
                 }
-                //catch (ObjectDisposedException) //todo
+                //catch (ObjectDisposedException) // todo: this error may occur if monitoring mechanism has already removed node
                 //{
                 //}
                 catch(SocketException)
@@ -103,7 +103,6 @@ namespace FloatingQueue.Server.Replication
             return replicas > 0;
         }
 
-        // todo MM: consider pinging both addresses - public and internal
         private void StartMonitoringConnections()
         {
             lock (m_ConnectionLock)

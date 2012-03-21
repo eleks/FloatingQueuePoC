@@ -18,7 +18,7 @@ namespace FloatingQueue.Server.Services
         [OperationContract]
         void ReceiveSingleAggregate(string aggregateId, int version, IEnumerable<object> events);
         [OperationContract]
-        bool NotificateSynchronizationFinished(Dictionary<string, int> writtenAggregatesVersions);
+        bool NotificateSynchronizationFinished(Dictionary<string, int> writtenAggregatesVersions); //todo MM: use hashCode isntead of dictionary versions
         [OperationContract]
         List<ExtendedNodeInfo> GetExtendedMetadata();
     }

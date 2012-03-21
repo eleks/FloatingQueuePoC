@@ -16,7 +16,6 @@ namespace FloatingQueue.Common.Proxy.QueueServiceProxy
 
     public class SafeQueueServiceProxy : IQueueService, IDisposable
     {
-        //todo: save information that address is dead and try to connect to it in case all current nodes are dead
         private static ClusterMetadata ms_SharedClusterMetadata;
         private static readonly object ms_SyncRoot = new object();
 
@@ -28,9 +27,6 @@ namespace FloatingQueue.Common.Proxy.QueueServiceProxy
         public SafeQueueServiceProxy(string address)
         {
             m_Proxy = new QueueServiceProxy(address);
-            //todo: think about using WCF's tools to detect failures
-            //var a = Client as ICommunicationObject;
-            //a.Faulted += (sender, args) => { var b = 5; };
         }
 
         public void Init(bool keepConnectionOpened = false)

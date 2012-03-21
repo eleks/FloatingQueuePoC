@@ -128,7 +128,6 @@ namespace FloatingQueue.Server.Replication
             }
         }
 
-        // note MM: if server is closed in small interval after another server has died and before it's been noticed(by ping or by method call), then wcf would fire exceptions. But at the moment they are handled by Proxy class. This may be subject to fix.
         public void RemoveDeadNode(int nodeId)
         {
             lock (m_SyncRoot)

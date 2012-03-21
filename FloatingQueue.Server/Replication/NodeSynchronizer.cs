@@ -22,9 +22,7 @@ namespace FloatingQueue.Server.Replication
 
         public void StartBackgroundSync(ExtendedNodeInfo nodeInfo, Dictionary<string, int> aggregateVersions)
         {
-            //todo: pushing each aggregate in separate thread would enhance performance
-            //todo: ensure single background task
-            //note: if update speed is to big, an epsilon can be taken
+            //todo MM: ensure single background task
             Task.Factory.StartNew(() =>
             {
                 Dictionary<string, int> writtenVersions = aggregateVersions,
