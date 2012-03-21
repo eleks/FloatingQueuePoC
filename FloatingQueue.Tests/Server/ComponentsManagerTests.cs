@@ -3,7 +3,7 @@ using FloatingQueue.Server.Core;
 using Moq;
 using NUnit.Framework;
 
-namespace FloatingQueue.Server.Tests
+namespace FloatingQueue.Tests.Server
 {
     [TestFixture]
     public class ComponentsManagerTests : TestBase

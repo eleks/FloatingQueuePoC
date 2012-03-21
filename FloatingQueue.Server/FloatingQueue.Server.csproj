@@ -76,14 +76,8 @@
     <Reference Include="log4net">
       <HintPath>..\packages\log4net.2.0.0\lib\net40-full\log4net.dll</HintPath>
     </Reference>
-    <Reference Include="Moq">
-      <HintPath>..\packages\Moq.4.0.10827\lib\NET40\Moq.dll</HintPath>
-    </Reference>
     <Reference Include="NDesk.Options">
       <HintPath>..\packages\NDesk.Options.0.2.1\lib\NDesk.Options.dll</HintPath>
-    </Reference>
-    <Reference Include="nunit.framework">
-      <HintPath>..\packages\NUnit.2.6.0.12054\lib\nunit.framework.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -124,17 +118,6 @@
     <Compile Include="TCP\TCPInternalQueueService.cs" />
     <Compile Include="TCP\TCPInternalQueueServiceProxy.cs" />
     <Compile Include="TCP\TCPPublicQueueService.cs" />
-    <Compile Include="Tests\AggreagateRepositoryTests.cs" />
-    <Compile Include="Tests\ComponentsManagerTests.cs" />
-    <Compile Include="Tests\ConfigurationTests.cs" />
-    <Compile Include="Tests\ConnectionManagerTests.cs" />
-    <Compile Include="Tests\EventAggregateTests.cs" />
-    <Compile Include="Tests\MasterElectionsTests.cs" />
-    <Compile Include="Tests\NodeCollectionTests.cs" />
-    <Compile Include="Tests\QueueServicesTestsBase.cs" />
-    <Compile Include="Tests\ServerTests.cs" />
-    <Compile Include="Tests\TestBase.cs" />
-    <Compile Include="Tests\TestLogger.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config">

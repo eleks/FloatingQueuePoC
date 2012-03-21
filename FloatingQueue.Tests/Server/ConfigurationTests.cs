@@ -1,14 +1,12 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using Autofac;
 using FloatingQueue.Server.Core;
 using FloatingQueue.Server.Replication;
 using Moq;
 using NUnit.Framework;
+using ServerClass = FloatingQueue.Server.Core.Server;
 
-namespace FloatingQueue.Server.Tests
+namespace FloatingQueue.Tests.Server
 {
     [TestFixture]
     public class ConfigurationTests : TestBase
@@ -92,7 +90,7 @@ namespace FloatingQueue.Server.Tests
         [Test]
         public void ServerConfigurationInstanceTest()
         {
-            Assert.AreEqual(m_ServerConfigurationMock.Object, Core.Server.Configuration);
+            Assert.AreEqual(m_ServerConfigurationMock.Object, ServerClass.Configuration);
         }
     }
 }

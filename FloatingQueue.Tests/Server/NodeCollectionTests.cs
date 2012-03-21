@@ -7,8 +7,9 @@ using FloatingQueue.Server.Replication;
 using FloatingQueue.Server.Services.Proxy;
 using Moq;
 using NUnit.Framework;
+using ServerClass = FloatingQueue.Server.Core.Server;
 
-namespace FloatingQueue.Server.Tests
+namespace FloatingQueue.Tests.Server
 {
     [TestFixture]
     public class NodeCollectionTests : TestBase
@@ -52,7 +53,7 @@ namespace FloatingQueue.Server.Tests
 
             var syblings = nodesCollection.Siblings;
 
-            Assert.IsFalse(syblings.Any(sybling => sybling.ServerId == Core.Server.Configuration.ServerId));
+            Assert.IsFalse(syblings.Any(sybling => sybling.ServerId == ServerClass.Configuration.ServerId));
         }
 
         [Test]

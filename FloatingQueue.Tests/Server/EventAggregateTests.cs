@@ -2,8 +2,9 @@
 using FloatingQueue.Server.EventsLogic;
 using FloatingQueue.Server.Exceptions;
 using NUnit.Framework;
+using ServerClass = FloatingQueue.Server.Core.Server;
 
-namespace FloatingQueue.Server.Tests
+namespace FloatingQueue.Tests.Server
 {
     [TestFixture]
     public class EventAggregateTests : TestBase
@@ -87,7 +88,7 @@ namespace FloatingQueue.Server.Tests
         [Test]
         public void CommitTest()
         {
-            var tranCounter = Core.Server.TransactionCounter;
+            var tranCounter = ServerClass.TransactionCounter;
             var aggregate = new EventAggregate();
             Assert.AreEqual(0, aggregate.LastVersion);
             Assert.IsFalse(aggregate.HasUncommitedChanges);
@@ -98,14 +99,14 @@ namespace FloatingQueue.Server.Tests
             aggregate.Commit();
 
             Assert.IsFalse(aggregate.HasUncommitedChanges);
-            Assert.AreEqual(tranCounter + 1, Core.Server.TransactionCounter);
+            Assert.AreEqual(tranCounter + 1, ServerClass.TransactionCounter);
             Assert.AreEqual(1, aggregate.LastVersion);
         }
 
         [Test]
         public void RollbackTest()
         {
-            var tranCounter = Core.Server.TransactionCounter;
+            var tranCounter = ServerClass.TransactionCounter;
             var aggregate = new EventAggregate();
             Assert.AreEqual(0, aggregate.LastVersion);
             Assert.IsFalse(aggregate.HasUncommitedChanges);
@@ -116,7 +117,7 @@ namespace FloatingQueue.Server.Tests
             aggregate.Rollback();
 
             Assert.IsFalse(aggregate.HasUncommitedChanges);
-            Assert.AreEqual(tranCounter, Core.Server.TransactionCounter);
+            Assert.AreEqual(tranCounter, ServerClass.TransactionCounter);
             Assert.AreEqual(0, aggregate.LastVersion);
         }
     }
