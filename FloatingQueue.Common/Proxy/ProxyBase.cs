@@ -16,7 +16,7 @@ namespace FloatingQueue.Common.Proxy
         public EndpointAddress EndpointAddress { get; private set; }
         public string Address { get; private set; }
 
-        protected void SetNewAddress(string address)
+        public void SetNewAddress(string address)
         {
             if (string.IsNullOrEmpty(address))
                 throw new ArgumentNullException("address");
@@ -58,7 +58,7 @@ namespace FloatingQueue.Common.Proxy
             Channel.Open();
         }
 
-        protected void CloseClient()
+        public void CloseClient()
         {
             if (m_Client != null)
             {
