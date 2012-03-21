@@ -8,7 +8,7 @@ using FloatingQueue.Server.Replication;
 using Moq;
 using NUnit.Framework;
 
-namespace FloatingQueue.Server.Tests
+namespace FloatingQueue.Tests.Server
 {
     [TestFixture]
     public class MasterElectionsTests : TestBase

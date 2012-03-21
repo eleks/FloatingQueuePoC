@@ -2,7 +2,7 @@
 using FloatingQueue.Common.Common;
 using FloatingQueue.Server.Core;
 
-namespace FloatingQueue.Server.Tests
+namespace FloatingQueue.Tests.Server
 {
     public class TestLogger : ILogger
     {

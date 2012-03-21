@@ -1,9 +1,9 @@
 ﻿using Autofac;
 using FloatingQueue.Common.Common;
-using FloatingQueue.Server.Core;
 using NUnit.Framework;
+using ServerClass = FloatingQueue.Server.Core.Server;
 
-namespace FloatingQueue.Server.Tests
+namespace FloatingQueue.Tests.Server
 {
     public abstract class TestBase
     {
@@ -16,7 +16,7 @@ namespace FloatingQueue.Server.Tests
 
             var container = containerBuilder.Build();
 
-            Core.Server.Init(container);
+            ServerClass.Init(container);
         }
 
         protected virtual void RegisterMocks(ContainerBuilder containerBuilder)

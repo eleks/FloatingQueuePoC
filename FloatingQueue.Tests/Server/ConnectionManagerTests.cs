@@ -1,8 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.ServiceModel;
-using System.Text;
 using System.Threading;
 using Autofac;
 using FloatingQueue.Server.Core;
@@ -11,7 +8,7 @@ using FloatingQueue.Server.Services.Proxy;
 using Moq;
 using NUnit.Framework;
 
-namespace FloatingQueue.Server.Tests
+namespace FloatingQueue.Tests.Server
 {
     [TestFixture]
     public class ConnectionManagerTests : TestBase
@@ -108,8 +105,10 @@ namespace FloatingQueue.Server.Tests
         [Test]
         public void TryReplicate_ConnectionLost_Test()
         {
+            Assert.Fail("Change CommunicationException by some more generic");
+
             m_SiblingProxyMock.Setup(m => m.Open()).Verifiable("Server hasn't opened connections before replication");
-            m_SiblingProxyMock.Setup(m => m.Push("a", 123, "b")).Throws(new CommunicationException());
+            //m_SiblingProxyMock.Setup(m => m.Push("a", 123, "b")).Throws(new CommunicationException()); // it's the only place in assembly that requires ServiceModel lib
 
             var connectionManager = new ConnectionManager();
             var connectionLostFired = false;

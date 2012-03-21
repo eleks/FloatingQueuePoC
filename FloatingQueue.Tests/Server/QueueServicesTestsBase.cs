@@ -10,7 +10,7 @@ using FloatingQueue.Server.Services.Implementation;
 using Moq;
 using NUnit.Framework;
 
-namespace FloatingQueue.Server.Tests
+namespace FloatingQueue.Tests.Server
 {
     public abstract class QueueServicesTestsBase : TestBase
     {

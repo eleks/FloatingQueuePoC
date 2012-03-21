@@ -5,7 +5,7 @@ using FloatingQueue.Server.EventsLogic;
 using Moq;
 using NUnit.Framework;
 
-namespace FloatingQueue.Server.Tests
+namespace FloatingQueue.Tests.Server
 {
     [TestFixture]
     public class AggreagateRepositoryTests : TestBase
