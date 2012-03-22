@@ -92,11 +92,15 @@ namespace FloatingQueue.Tests.Server
             var aggregate = new EventAggregate();
             Assert.AreEqual(0, aggregate.LastVersion);
             Assert.IsFalse(aggregate.HasUncommitedChanges);
-            aggregate.Push(-1, new object());
-            Assert.IsTrue(aggregate.HasUncommitedChanges);
-            Assert.AreEqual(1, aggregate.LastVersion);
 
-            aggregate.Commit();
+            using (var tran = aggregate.BeginTransaction())
+            {
+                aggregate.Push(-1, new object());
+                Assert.IsTrue(aggregate.HasUncommitedChanges);
+                Assert.AreEqual(1, aggregate.LastVersion);
+
+                tran.Commit();
+            }
 
             Assert.IsFalse(aggregate.HasUncommitedChanges);
             Assert.AreEqual(tranCounter + 1, ServerClass.TransactionCounter);
@@ -110,11 +114,15 @@ namespace FloatingQueue.Tests.Server
             var aggregate = new EventAggregate();
             Assert.AreEqual(0, aggregate.LastVersion);
             Assert.IsFalse(aggregate.HasUncommitedChanges);
-            aggregate.Push(-1, new object());
-            Assert.IsTrue(aggregate.HasUncommitedChanges);
-            Assert.AreEqual(1, aggregate.LastVersion);
 
-            aggregate.Rollback();
+            using (var tran = aggregate.BeginTransaction())
+            {
+                aggregate.Push(-1, new object());
+                Assert.IsTrue(aggregate.HasUncommitedChanges);
+                Assert.AreEqual(1, aggregate.LastVersion);
+
+                tran.Rollback();
+            }
 
             Assert.IsFalse(aggregate.HasUncommitedChanges);
             Assert.AreEqual(tranCounter, ServerClass.TransactionCounter);

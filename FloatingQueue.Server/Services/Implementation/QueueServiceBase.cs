@@ -23,7 +23,7 @@ namespace FloatingQueue.Server.Services.Implementation
 
             // note MM: potential bug - if rollback is required, an aggregate who has just been created will not be deleted
             var aggregate = GetEventAggregate(aggregateId);
-            try
+            using(var transaction = aggregate.BeginTransaction())
             {
                 aggregate.Push(version, e);
                 if (Core.Server.Configuration.IsMaster)
@@ -34,12 +34,7 @@ namespace FloatingQueue.Server.Services.Implementation
                         throw new ApplicationException("Cannot replicate the data.");
                     }
                 }
-                aggregate.Commit();
-            }
-            catch
-            {
-                aggregate.Rollback();
-                throw;
+                transaction.Commit();
             }
         }
 

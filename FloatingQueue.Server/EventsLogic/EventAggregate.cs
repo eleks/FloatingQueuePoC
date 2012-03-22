@@ -1,10 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using FloatingQueue.Server.Exceptions;
 
 namespace FloatingQueue.Server.EventsLogic
 {
+    public interface ITransaction : IDisposable
+    {
+        void Commit();
+        void Rollback();
+    }
+
     public interface IEventAggregate
     {
         void Push(int version, object e);
@@ -13,15 +20,15 @@ namespace FloatingQueue.Server.EventsLogic
         IEnumerable<object> GetAllNext(int version);
         IEnumerable<object> GetRange(int version, int count);
         int LastVersion { get; }
-        void Commit();
-        void Rollback();
+
+        ITransaction BeginTransaction();
     }
 
     public class EventAggregate : IEventAggregate
     {
         private readonly List<object> m_InternalStorage = new List<object>();
         private readonly object m_SyncRoot = new object();
-        private bool m_HasUncommitedChanges;
+        private int m_UncommitedChangesCount;
 
         public void Push(int version, object e)
         {
@@ -32,7 +39,7 @@ namespace FloatingQueue.Server.EventsLogic
                     throw new OptimisticLockException();
                 }
                 m_InternalStorage.Add(e);
-                m_HasUncommitedChanges = true;
+                m_UncommitedChangesCount++;
             }
         }
 
@@ -44,8 +51,9 @@ namespace FloatingQueue.Server.EventsLogic
                 {
                     throw new OptimisticLockException();
                 }
+                int prevCount = m_InternalStorage.Count;
                 m_InternalStorage.AddRange(events);
-                m_HasUncommitedChanges = true;
+                m_UncommitedChangesCount += m_InternalStorage.Count - prevCount;
             }
         }
 
@@ -95,25 +103,77 @@ namespace FloatingQueue.Server.EventsLogic
 
         public bool HasUncommitedChanges
         {
-            get { return m_HasUncommitedChanges; }
+            get { return m_UncommitedChangesCount > 0; }
         }
 
-        public void Commit()
+        public ITransaction BeginTransaction()
+        {
+            Monitor.Enter(m_SyncRoot);
+            return new Transaction(this);
+        }
+
+        private void CommitTransaction()
         {
             // todo: flush the data into file system here
-            if (m_HasUncommitedChanges)
+            if (HasUncommitedChanges)
             {
-                m_HasUncommitedChanges = false;
+                m_UncommitedChangesCount = 0;
                 Core.Server.FireTransactionCommited(); // todo: use pub/sub here
             }
+            Monitor.Exit(m_SyncRoot);
         }
 
-        public void Rollback()
+        private void RollbackTransaction()
         {
-            if (m_HasUncommitedChanges)
+            if (HasUncommitedChanges)
             {
-                m_InternalStorage.RemoveAt(m_InternalStorage.Count - 1);
-                m_HasUncommitedChanges = false;
+                for (int i = 0; i < m_UncommitedChangesCount; i++)
+                {
+                    m_InternalStorage.RemoveAt(m_InternalStorage.Count - 1);
+                }
+                m_UncommitedChangesCount = 0;
+            }
+            Monitor.Exit(m_SyncRoot);
+        }
+
+        public class Transaction : ITransaction
+        {
+            private readonly EventAggregate m_Aggregate;
+            private bool m_Commited;
+            private bool m_RolledBack;
+
+            public Transaction(EventAggregate aggregate)
+            {
+                m_Aggregate = aggregate;
+            }
+
+            private bool Finalized
+            {
+                get { return m_Commited || m_RolledBack; }
+            }
+
+            public void Commit()
+            {
+                if (Finalized)
+                    throw new InvalidOperationException("Transaction finalized");
+                m_Aggregate.CommitTransaction();
+                m_Commited = true;
+            }
+
+            public void Rollback()
+            {
+                if (Finalized)
+                    throw new InvalidOperationException("Transaction finalized");
+                m_Aggregate.RollbackTransaction();
+                m_RolledBack = true;
+            }
+
+            public void Dispose()
+            {
+                if (!Finalized)
+                {
+                    Rollback();
+                }
             }
         }
     }
