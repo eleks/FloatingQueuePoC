@@ -28,8 +28,8 @@ namespace FloatingQueue.Server.Replication
                     throw new ApplicationException("Unsynced nodes shouldn't be involved in master elections");
 
                 // this event may fire twice in specific circumstances// todo: avoid
-                if (!Core.Server.Configuration.Nodes.Siblings.Any(n => n.ServerId == lostServerId))
-                    return;
+                //if (!Core.Server.Configuration.Nodes.Siblings.Any(n => n.ServerId == lostServerId))
+                //    return;
 
                 // first get master id, as he can be deleted
                 int masterId = Core.Server.Configuration.Nodes.Master.ServerId;
