@@ -57,19 +57,6 @@ namespace FloatingQueue.Server.EventsLogic
             }
         }
 
-        //public IDictionary<string, IEventAggregate> GetAllAggregates()
-        //{
-        //    try
-        //    {
-        //        m_Lock.EnterReadLock();
-        //        return new Dictionary<string, IEventAggregate>(m_InternalStorage);
-        //    }
-        //    finally
-        //    {
-        //        m_Lock.ExitReadLock();
-        //    }
-        //}
-
         public List<string> GetAllIds()
         {
             try
@@ -83,7 +70,6 @@ namespace FloatingQueue.Server.EventsLogic
             }
         }
 
-        // todo: refactor this method to GetAllAggregates + (extension method)GetLastVersions
         public Dictionary<string, int> GetLastVersions()
         {
             try

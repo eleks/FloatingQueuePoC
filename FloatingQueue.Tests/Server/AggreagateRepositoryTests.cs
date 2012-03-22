@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using Autofac;
 using FloatingQueue.Server.EventsLogic;
@@ -10,12 +11,13 @@ namespace FloatingQueue.Tests.Server
     [TestFixture]
     public class AggreagateRepositoryTests : TestBase
     {
-        private Mock<IAggregateRepository> m_AggregateRepositoryMock = new Mock<IAggregateRepository>();
+        private readonly Mock<IEventAggregate> m_EventAggregate = new Mock<IEventAggregate>();
+        private readonly Mock<IAggregateRepository> m_AggregateRepositoryMock = new Mock<IAggregateRepository>();
 
         protected override void RegisterMocks(Autofac.ContainerBuilder containerBuilder)
         {
             base.RegisterMocks(containerBuilder);
-            containerBuilder.RegisterInstance(new Mock<IEventAggregate>().Object).As<IEventAggregate>();
+            containerBuilder.RegisterInstance(m_EventAggregate.Object).As<IEventAggregate>();
             containerBuilder.RegisterInstance(m_AggregateRepositoryMock.Object).As<IAggregateRepository>();
         }
 
@@ -71,7 +73,12 @@ namespace FloatingQueue.Tests.Server
         [Test]
         public void GetLastVersionsTest()
         {
-            Assert.Fail("Refactor method");
+            m_EventAggregate.SetupGet(m => m.LastVersion).Returns(123);
+            var a = new AggregateRepository();
+            var aggregate = a.CreateAggregate("1");
+
+            var result = a.GetLastVersions();
+            CollectionAssert.AreEquivalent(new[] { new KeyValuePair<string, int>("1", 123)}, result);
         }
     }
 }

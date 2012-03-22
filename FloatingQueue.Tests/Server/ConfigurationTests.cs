@@ -11,7 +11,7 @@ namespace FloatingQueue.Tests.Server
     [TestFixture]
     public class ConfigurationTests : TestBase
     {
-        private Mock<IServerConfiguration> m_ServerConfigurationMock = new Mock<IServerConfiguration>();
+        private readonly Mock<IServerConfiguration> m_ServerConfigurationMock = new Mock<IServerConfiguration>();
 
         protected override void RegisterMocks(Autofac.ContainerBuilder containerBuilder)
         {
@@ -20,7 +20,7 @@ namespace FloatingQueue.Tests.Server
         }
             
         [Test, Combinatorial]
-        public void ServerConfigurationTest([Values(false, true)]bool isMaster, [Values(false, true)]bool isSynced, [Values(false, true)]bool isReadonly, [Values("a", "b")]string address)
+        public void ServerConfigurationTest([Values(false, true)]bool isMaster, [Values("a", "b")]string address)
         {
             var nodeMock = new Mock<INodeConfiguration>();
             nodeMock.SetupGet(m => m.InternalAddress).Returns(address);
@@ -32,16 +32,7 @@ namespace FloatingQueue.Tests.Server
             var serverConfiguration = new ServerConfiguration { Nodes = collectionMock.Object };
 
             Assert.AreEqual(isMaster, serverConfiguration.IsMaster);
-            Assert.AreEqual(isSynced, serverConfiguration.IsSynced);
-            Assert.AreEqual(isReadonly, serverConfiguration.IsReadonly);
             Assert.AreEqual(address, serverConfiguration.InternalAddress);
-        }
-
-        [Test, ExpectedException(typeof(InvalidOperationException))]
-        public void NodeConfiguration_DeclareAsNewMaster_NonSync_Test()
-        {
-            var nodeConfiguration = new NodeConfiguration();
-            nodeConfiguration.DeclareAsNewMaster();
         }
 
         [Test, ExpectedException(typeof(InvalidOperationException))]
