@@ -55,11 +55,11 @@ namespace FloatingQueue.Tests.Server
 
             m_ServerConfigurationMock.SetupGet(m => m.ServerId).Returns(ServerId);
 
-            m_NodesCollectionMock.Setup(m => m.RemoveDeadNode(lostServerId)).Verifiable();
+            m_NodesCollectionMock.Setup(m => m.MarkAsDead(lostServerId)).Verifiable();
 
             m_ConnectionManagerMock.Raise(m => m.OnConnectionLoss += null, lostServerId);
 
-            m_NodesCollectionMock.Verify(m => m.RemoveDeadNode(lostServerId));
+            m_NodesCollectionMock.Verify(m => m.MarkAsDead(lostServerId));
         }
 
         [Test]
@@ -81,11 +81,11 @@ namespace FloatingQueue.Tests.Server
 
             m_NodesCollectionMock.SetupGet(m => m.All).Returns(new[] { sibling1.Object, sibling2.Object }.ToList().AsReadOnly());
 
-            m_NodesCollectionMock.Setup(m => m.RemoveDeadNode(lostServerId)).Verifiable();
+            m_NodesCollectionMock.Setup(m => m.MarkAsDead(lostServerId)).Verifiable();
 
             m_ConnectionManagerMock.Raise(m => m.OnConnectionLoss += null, lostServerId);
 
-            m_NodesCollectionMock.Verify(m => m.RemoveDeadNode(lostServerId));
+            m_NodesCollectionMock.Verify(m => m.MarkAsDead(lostServerId));
             sibling1.Verify(m => m.DeclareAsNewMaster());
         }
     }

@@ -79,6 +79,18 @@ namespace FloatingQueue.Tests.Server
         }
 
         [Test]
+        public void SelfAccessTest()
+        {
+            m_ServerConfigurationMock.Setup((config) => config.ServerId).Returns(1);
+            var nodes = CreateNodes(NodesCount);
+            var nodesCollection = new NodeCollection(nodes);
+
+            var self = nodesCollection.Self;
+
+            Assert.AreEqual(nodes.Single(n => n.ServerId == 1), self);
+        }
+
+        [Test]
         public void MasterThrowsExceptionInCaseOfManyMastersTest()
         {
             var nodes = CreateNodes(NodesCount, (serverId) => serverId < 2);
@@ -91,12 +103,33 @@ namespace FloatingQueue.Tests.Server
         }
 
         [Test]
+        public void MasterTest()
+        {
+            var nodes = CreateNodes(NodesCount, (serverId) => serverId == 0);
+            var nodesCollection = new NodeCollection(nodes);
+
+            var master = nodesCollection.Master;
+            Assert.AreEqual(0, master.ServerId);
+        }
+
+        [Test]
         public void AddNewNodeForbidsNullsTest()
         {
             var nodes = CreateNodes(2);
             var nodesCollection = new NodeCollection(nodes);
 
             Assert.Throws<ArgumentNullException>(() => nodesCollection.AddNewNode(null));
+        }
+
+        [Test]
+        public void AddNewNodeForbidsSecondMasterTest()
+        {
+            var nodes = CreateNodes(2, i => i == 0);
+            var nodesCollection = new NodeCollection(nodes);
+
+            var secondMaster = new Mock<INodeConfiguration>();
+            secondMaster.SetupGet(m => m.IsMaster).Returns(true);
+            Assert.Throws<ArgumentException>(() => nodesCollection.AddNewNode(secondMaster.Object));
         }
 
         [Test]
@@ -136,18 +169,33 @@ namespace FloatingQueue.Tests.Server
             var nodes = CreateNodes(NodesCount);
             var nodesColection = new NodeCollection(nodes);
 
-            Assert.DoesNotThrow(() => nodesColection.RemoveDeadNode(17));
+            Assert.DoesNotThrow(() => nodesColection.MarkAsDead(17));
         }
 
         [Test]
-        public void CanRemoveDeadNodeTest()
+        public void CanMarkAsDeadNodeTest()
         {
             var nodes = CreateNodes(NodesCount);
             var nodesColection = new NodeCollection(nodes);
 
-            nodesColection.RemoveDeadNode(1);
+            nodesColection.MarkAsDead(1);
 
             Assert.AreEqual(NodesCount - 1, nodesColection.All.Count());
+            Assert.AreEqual(1, nodesColection.DeadNodesCount);
+        }
+
+        [Test]
+        public void RemoveDeadNodesTest()
+        {
+            var nodes = CreateNodes(NodesCount);
+            var nodesColection = new NodeCollection(nodes);
+
+            nodesColection.MarkAsDead(1);
+            Assert.AreEqual(1, nodesColection.DeadNodesCount);
+            nodesColection.RemoveDeadNodes();
+
+            Assert.AreEqual(NodesCount - 1, nodesColection.All.Count());
+            Assert.AreEqual(0, nodesColection.DeadNodesCount);
         }
 
         private List<INodeConfiguration> CreateNodes(int count, Func<byte, byte> idSelector, Func<byte, bool> masterSelector)

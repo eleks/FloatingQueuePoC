@@ -12,7 +12,7 @@ namespace FloatingQueue.Server.Replication
         ReadOnlyCollection<INodeConfiguration> Siblings { get; }
         INodeConfiguration Self { get; }
         INodeConfiguration Master { get; }
-        void RemoveDeadNode(int nodeId);
+        void MarkAsDead(int nodeId);
         void AddNewNode(INodeConfiguration slave);
     }
 
@@ -128,7 +128,7 @@ namespace FloatingQueue.Server.Replication
             }
         }
 
-        public void RemoveDeadNode(int nodeId)
+        public void MarkAsDead(int nodeId)
         {
             lock (m_SyncRoot)
             {
@@ -166,6 +166,11 @@ namespace FloatingQueue.Server.Replication
             {
                 return m_Nodes.Where((t, i) => !m_DeadNodes[i]);
             }
+        }
+
+        public int DeadNodesCount
+        {
+            get { return m_DeadNodes.Count(i => i); }
         }
     }
 }

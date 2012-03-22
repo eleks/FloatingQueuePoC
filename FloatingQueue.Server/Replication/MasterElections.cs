@@ -34,7 +34,7 @@ namespace FloatingQueue.Server.Replication
                 // first get master id, as he can be deleted
                 int masterId = Core.Server.Configuration.Nodes.Master.ServerId;
 
-                Core.Server.Configuration.Nodes.RemoveDeadNode(lostServerId);
+                Core.Server.Configuration.Nodes.MarkAsDead(lostServerId);
 
                 if (!Core.Server.Configuration.IsMaster && lostServerId == masterId)
                 {
