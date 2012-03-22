@@ -178,10 +178,7 @@ namespace FloatingQueue.Server.EventsLogic
 
             ~Transaction()
             {
-                if(!Finalized)
-                {
-                    Dispose();
-                }
+                Dispose();
             }
         }
     }
