@@ -136,7 +136,7 @@ namespace FloatingQueue.Server.EventsLogic
             Monitor.Exit(m_SyncRoot);
         }
 
-        public class Transaction : ITransaction
+        private class Transaction : ITransaction
         {
             private readonly EventAggregate m_Aggregate;
             private bool m_Commited;
@@ -173,6 +173,14 @@ namespace FloatingQueue.Server.EventsLogic
                 if (!Finalized)
                 {
                     Rollback();
+                }
+            }
+
+            ~Transaction()
+            {
+                if(!Finalized)
+                {
+                    Dispose();
                 }
             }
         }
