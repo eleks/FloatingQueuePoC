@@ -209,5 +209,13 @@ namespace FloatingQueue.Tests.Server
             var service = GetService();
             Assert.Throws<ApplicationException>(() => service.Push("a", -1, new object()));
         }
+
+        [Test]
+        public void PushErrTest()
+        {
+            m_ServerConfigurationMock.SetupGet(m => m.IsMaster).Returns(true);
+            var service = GetService();
+            Assert.Throws<ApplicationException>(() => service.Push("-err", -1, new object()));
+        }
     }
 }
