@@ -6,6 +6,10 @@ namespace FloatingQueue.Common
 {
     public class ConnectionErrorException : Exception
     {
+        public ConnectionErrorException()
+        {
+        }
+
         public ConnectionErrorException(Exception innerException) : base("Communication Error", innerException)
         {
         }

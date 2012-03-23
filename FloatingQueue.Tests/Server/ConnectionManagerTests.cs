@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Threading;
 using Autofac;
+using FloatingQueue.Common;
 using FloatingQueue.Server.Core;
 using FloatingQueue.Server.Replication;
 using FloatingQueue.Server.Services.Proxy;
@@ -53,8 +54,7 @@ namespace FloatingQueue.Tests.Server
         [Test]
         public void MonitoringTest()
         {
-            throw new NotImplementedException();
-            //m_SiblingProxyMock.Setup(m => m.Ping()).Returns(0).Verifiable();
+            m_SiblingProxyMock.Setup(m => m.Ping()).Verifiable();
             var connectionManager = new ConnectionManager();
             connectionManager.OpenOutcomingConnections();
             Thread.Sleep(100);
@@ -64,8 +64,7 @@ namespace FloatingQueue.Tests.Server
         [Test]
         public void MonitoringInterruptedTest()
         {
-            throw new NotImplementedException();
-            //m_SiblingProxyMock.Setup(m => m.Ping()).Returns(0).Verifiable();
+            m_SiblingProxyMock.Setup(m => m.Ping()).Verifiable();
             var connectionManager = new ConnectionManager();
             connectionManager.OpenOutcomingConnections();
             Thread.Sleep(100);
@@ -79,8 +78,7 @@ namespace FloatingQueue.Tests.Server
         [Test]
         public void LostConnectionTest()
         {
-            throw new NotImplementedException();
-            //m_SiblingProxyMock.Setup(m => m.Ping()).Returns(1).Verifiable();
+            m_SiblingProxyMock.Setup(m => m.Ping()).Throws<ConnectionErrorException>().Verifiable();
             m_SiblingMock.SetupGet(m => m.ServerId).Returns(123);
             var connectionManager = new ConnectionManager();
 
@@ -100,6 +98,7 @@ namespace FloatingQueue.Tests.Server
             m_SiblingProxyMock.Setup(m => m.Push("a", 123, "b")).Verifiable("Server hasn't pushed data to siblings");
             
             var connectionManager = new ConnectionManager();
+            connectionManager.OpenOutcomingConnections();
             Assert.IsTrue(connectionManager.TryReplicate("a", 123, "b"));
             
             m_SiblingProxyMock.Verify();
@@ -108,14 +107,15 @@ namespace FloatingQueue.Tests.Server
         [Test]
         public void TryReplicate_ConnectionLost_Test()
         {
-            Assert.Fail("Change CommunicationException by some more generic");
+            //Assert.Fail("Change CommunicationException by some more generic");
 
             m_SiblingProxyMock.Setup(m => m.Open()).Verifiable("Server hasn't opened connections before replication");
-            //m_SiblingProxyMock.Setup(m => m.Push("a", 123, "b")).Throws(new CommunicationException()); // it's the only place in assembly that requires ServiceModel lib
+            m_SiblingProxyMock.Setup(m => m.Push("a", 123, "b")).Throws(new ConnectionErrorException()); // it's the only place in assembly that requires ServiceModel lib
 
             var connectionManager = new ConnectionManager();
             var connectionLostFired = false;
             connectionManager.OnConnectionLoss += (id) => { connectionLostFired = true; };
+            connectionManager.OpenOutcomingConnections();
             Assert.IsFalse(connectionManager.TryReplicate("a", 123, "b"));
 
             m_SiblingProxyMock.Verify();
@@ -131,6 +131,7 @@ namespace FloatingQueue.Tests.Server
             var connectionManager = new ConnectionManager();
             var connectionLostFired = false;
             connectionManager.OnConnectionLoss += (id) => { connectionLostFired = true; };
+            connectionManager.OpenOutcomingConnections();
             Assert.IsFalse(connectionManager.TryReplicate("a", 123, "b"));
 
             m_SiblingProxyMock.Verify();
