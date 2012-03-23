@@ -99,7 +99,7 @@ namespace FloatingQueue.Server.Replication
             if (mastersCount != 1)
                 throw new BadConfigurationException("There must be exactly 1 master node");
 
-            if (nodes.All.Distinct().Count() < nodes.All.Count())
+            if (nodes.All.Select(n => n.ServerId).Distinct().Count() < nodes.All.Count())
                 throw new BadConfigurationException("Every node must have unique Id");
         }
     }
