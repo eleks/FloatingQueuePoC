@@ -33,6 +33,15 @@ namespace FloatingQueue.Tests.Server
             Assert.IsFalse (aggregate.TryGetNext(0, out result));
         }
 
+        [Test]
+        public void TryGetNextNegativeVersionTest()
+        {
+            var aggregate = new EventAggregate();
+
+            object result;
+            Assert.IsFalse (aggregate.TryGetNext(-1, out result));
+        }
+
         [Test, ExpectedException(typeof(OptimisticLockException))]
         public void OptimisticLockTest()
         {

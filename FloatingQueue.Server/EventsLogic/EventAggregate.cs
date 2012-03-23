@@ -56,7 +56,7 @@ namespace FloatingQueue.Server.EventsLogic
 
         public bool TryGetNext(int version, out object next)
         {
-            if (version < m_InternalStorage.Count)
+            if (version >= 0 && version < m_InternalStorage.Count)
             {
                 next = m_InternalStorage[version];
                 return true;

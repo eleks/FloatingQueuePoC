@@ -18,7 +18,6 @@ namespace FloatingQueue.TestClient
         private static string MasterAddress = "net.tcp://localhost:10080";
         private static SafeQueueServiceProxy ms_Proxy;
 
-
         static void Main(string[] args)
         {
             InitializeCommunicationProvider(useTCP: true);
@@ -46,13 +45,20 @@ namespace FloatingQueue.TestClient
                             DoPush(ms_Proxy, atoms.Skip(1).ToArray());
                             Logger.Instance.Info("Done. Completed in {0} ms", (DateTime.Now - start).TotalMilliseconds);
                             break;
+                        case "get":
+                            DoGet(ms_Proxy, atoms.Skip(1).ToArray());
+                            Logger.Instance.Info("Done. Completed in {0} ms", (DateTime.Now - start).TotalMilliseconds);
+                            break;
                         case "flood":
                             int threads = int.Parse(atoms[1]);
                             int requests = int.Parse(atoms[2]);
+                            int maxValue = int.MaxValue;
+                            if (atoms.Length == 4)
+                                maxValue = int.Parse(atoms[3]);
                             var tasks = new List<Task>();
                             for (int i = 0; i < threads; i++)
                             {
-                                tasks.Add(new Task(() => DoFlood(requests)));
+                                tasks.Add(new Task(() => DoFlood(requests, maxValue)));
                             }
                             foreach (var task in tasks)
                             {
@@ -73,7 +79,7 @@ namespace FloatingQueue.TestClient
             }
         }
 
-        private static void DoFlood(int requests)
+        private static void DoFlood(int requests, int maxValue)
         {
             SafeQueueServiceProxy proxy;
             if (!TryCreateProxy(MasterAddress, true, out proxy))
@@ -85,7 +91,7 @@ namespace FloatingQueue.TestClient
                 {
                     try
                     {
-                        proxy.Push(ms_Rand.Next().ToString(), -1, ms_Rand.Next().ToString());
+                        proxy.Push(ms_Rand.Next(maxValue).ToString(), -1, ms_Rand.Next().ToString());
                     }
                     catch (Exception ex)
                     {
@@ -104,9 +110,67 @@ namespace FloatingQueue.TestClient
             }
             catch (Exception ex)
             {
-                Logger.Instance.Error("Unhandled Exception",ex);
+                Logger.Instance.Error("Unhandled Exception", ex);
                 ShowUsage();
             }
+        }
+
+        static void DoGet(IQueueService proxy, string[] args)
+        {
+            try
+            {
+                bool getAll = false;
+                if (args[0] == "all")
+                {
+                    getAll = true;
+                    args = args.Skip(1).ToArray();
+                }
+
+                var aggregateId = args[0];
+                int version;
+                if (args.Length > 1)
+                    version = int.Parse(args[1]);
+                else
+                {
+                    if (getAll)
+                        version = -1;
+                    else
+                        throw new ArgumentException("Version must be specified if exact version is requested");
+                }
+
+                if (getAll)
+                {
+                    var results = proxy.GetAllNext(aggregateId, version);
+                    if (results.Count() == 0)
+                    {
+                        Logger.Instance.Warn("There's no objects in aggregate '{0}' with version > {1}", 
+                            aggregateId, version);
+                    }
+                    else
+                    {
+                        foreach (var result in results)
+                            Logger.Instance.Info(result.ToString());
+                    }
+                }
+                else
+                {
+                    object obj;
+                    if (proxy.TryGetNext(aggregateId,version, out obj))
+                    {
+                        Logger.Instance.Info(obj.ToString());
+                    }
+                    else
+                    {
+                        Logger.Instance.Warn("Theres' no object in aggregate '{0}' with version {1}",aggregateId, version);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Instance.Error("Unhandled Exception", ex);
+                ShowUsage();
+            }
+
         }
 
         public static bool TryCreateProxy(string address, bool keepConnectionOpened, out SafeQueueServiceProxy proxy)
@@ -116,7 +180,7 @@ namespace FloatingQueue.TestClient
                 proxy = new SafeQueueServiceProxy(address, keepConnectionOpened);
                 return true;
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 Logger.Instance.Error("Cannot establish connection with server at {0}. Error {1}:{2}", MasterAddress, e.GetType().Name, e.Message);
                 proxy = null;
@@ -146,7 +210,8 @@ namespace FloatingQueue.TestClient
             Logger.Instance.Info("Usage: <command> <arg1> .. <argN>");
             Logger.Instance.Info("Commands:");
             Logger.Instance.Info("\tpush <aggregateId> <version> <data>");
-            Logger.Instance.Info("\tflood <threads> <requests>");
+            Logger.Instance.Info("\tflood <threads> <requests> <maxAggregateId=int.max>");
+            Logger.Instance.Info("\tget <all=false> <aggregateId> <version>");
             Logger.Instance.Info("\texit");
         }
     }
