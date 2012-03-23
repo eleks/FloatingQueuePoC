@@ -44,8 +44,8 @@ namespace FloatingQueue.Server.Services.Implementation
 
         public void ReceiveSingleAggregate(string aggregateId, int version, IEnumerable<object> events)
         {
-            Core.Server.Log.Info("Receiving aggregate events. AggregateId = {0}, version = {1}",
-                aggregateId, version);
+            Core.Server.Log.Debug("Receiving aggregate events. AggregateId = {0}, version = {1}, events = {2}",
+                aggregateId, version, events.Count());
 
             if (Core.Server.Configuration.IsSynced)
                 throw new BusinessLogicException("Only Unsynced Node can receive aggregate events in 1 batch");

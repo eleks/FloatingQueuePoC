@@ -52,30 +52,37 @@ namespace FloatingQueue.Server.Replication
                 {
                     Core.Server.Log.Debug("Sync with {0} almost finished. Switching to readonly mode", nodeInfo.InternalAddress);
                     Core.Server.Configuration.EnterReadonlyMode();
+                    try
+                    {
+                        var syncedNode = ProxyHelper.TranslateNodeInfo(nodeInfo);
+                        syncedNode.CreateProxy();
+                        syncedNode.Proxy.Open();
 
-                    var syncedNode = ProxyHelper.TranslateNodeInfo(nodeInfo);
-                    syncedNode.CreateProxy(); 
-                    syncedNode.Proxy.Open();
+                        Core.Server.Log.Debug("Handling last updates...");
+                        var currentVersions = AggregateRepository.Instance.GetLastVersions();
+                        if (!writtenVersions.AreEqualToVersions(currentVersions))
+                            writtenVersions = DoSync(syncedNode.Proxy, currentVersions);
 
-                    Core.Server.Log.Debug("Handling last updates...");
-                    var currentVersions = AggregateRepository.Instance.GetLastVersions();
-                    if (!writtenVersions.AreEqualToVersions(currentVersions))
-                        writtenVersions = DoSync(syncedNode.Proxy, currentVersions);
+                        Core.Server.Log.Debug("Introducing {0} to everyone, including myself...",
+                                              nodeInfo.InternalAddress);
+                        foreach (var node in Core.Server.Configuration.Nodes.Siblings)
+                            node.Proxy.IntroduceNewNode(nodeInfo);
+                        Core.Server.Configuration.Nodes.AddNewNode(syncedNode);
 
-                    Core.Server.Log.Debug("Introducing {0} to everyone, including myself...",nodeInfo.InternalAddress);
-                    foreach (var node in Core.Server.Configuration.Nodes.Siblings)
-                        node.Proxy.IntroduceNewNode(nodeInfo);
-                    Core.Server.Configuration.Nodes.AddNewNode(syncedNode);
+                        Core.Server.Log.Debug("Checking current configuration...");
+                        ProxyHelper.EnsureNodesConfigurationIsValid();
 
-                    Core.Server.Log.Debug("Checking current configuration...");
-                    ProxyHelper.EnsureNodesConfigurationIsValid();
+                        Core.Server.Log.Debug("Notifying {0} about finish of sync", nodeInfo.InternalAddress);
+                        if (!syncedNode.Proxy.NotificateSynchronizationFinished(writtenVersions))
+                            throw new ApplicationException(
+                                "Synced node version didn't match current version, after all the sync process");
 
-                    Core.Server.Log.Debug("Notifying {0} about finish of sync", nodeInfo.InternalAddress);
-                    if (!syncedNode.Proxy.NotificateSynchronizationFinished(writtenVersions))
-                        throw new ApplicationException("Synced node version didn't match current version, after all the sync process");
-
-                    Core.Server.Configuration.ExitReadonlyMode();
-                    Core.Server.Log.Debug("Sync with {0} has finished successfully. Exiting readonly mode", nodeInfo.InternalAddress);
+                        Core.Server.Log.Debug("Sync with {0} has finished successfully. Exiting readonly mode", nodeInfo.InternalAddress);
+                    }
+                    finally
+                    {
+                        Core.Server.Configuration.ExitReadonlyMode();
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -105,7 +112,7 @@ namespace FloatingQueue.Server.Replication
                 if (unsyncedNodeLastVersion > localNodeLastVersion)
                     throw new CriticalException("Fatal desynchronization issue came up - unsynced node last version is bigger than local(synced) node last version");
 
-                var events = aggregate.GetAllNext(unsyncedNodeLastVersion + 1);
+                var events = aggregate.GetAllNext(unsyncedNodeLastVersion);
                 proxy.ReceiveSingleAggregate(aggregateId, unsyncedNodeLastVersion, events);
 
                 writtenAggregatesVersions[aggregateId] = localNodeLastVersion;

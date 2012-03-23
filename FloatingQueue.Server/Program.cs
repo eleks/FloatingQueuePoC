@@ -17,13 +17,13 @@ using NDesk.Options;
 
 namespace FloatingQueue.Server
 {
-    class Program
+    public static class Program
     {
         private static CommunicationObjectBase ms_InternalHost;
         private static CommunicationObjectBase ms_PublicHost;
         private static List<string> ms_NodesAddresses;
 
-        static void Main(string[] args)
+        public static void Main(string[] args)
         {
             if (args == null || args.Length == 0)
             {

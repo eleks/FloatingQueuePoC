@@ -107,13 +107,13 @@ namespace FloatingQueue.Server.Replication
             {
                 throw new ArgumentNullException("slave");
             }
-            if (m_Nodes.Contains(slave))
-            {
-                throw new ArgumentException("cannot add node. Server ID already exists");
-            }
             lock (m_SyncRoot)
             {
                 RemoveDeadNodes();
+                if (m_Nodes.Contains(slave))
+                {
+                    throw new ArgumentException("cannot add node. Server ID already exists");
+                }
                 //
                 if (slave.IsMaster && m_Nodes.Any(n => n.IsMaster))
                 {
@@ -144,13 +144,12 @@ namespace FloatingQueue.Server.Replication
         {
             lock (m_SyncRoot)
             {
-                for (int i = 0; i < m_DeadNodes.Count; i++)
+                for (int i = m_DeadNodes.Count - 1; i >= 0; i--)
                 {
                     if (m_DeadNodes[i])
                     {
                         m_Nodes.RemoveAt(i);
                         m_DeadNodes.RemoveAt(i);
-                        i--;
                     }
                 }
             }

@@ -12,3 +12,4 @@ rem runClient.cmd
 
 rem -pubport=10080 -intport=11080 -id=0 -m
 rem -pubport=10081 -intport=11081 -id=1 -nodes=net.tcp://localhost:11080
+rem -pubport=10082 -intport=11082 -id=2 -nodes=net.tcp://localhost:11080
