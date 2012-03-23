@@ -54,6 +54,7 @@ namespace FloatingQueue.Tests.Server
             elections.Init();
 
             m_ServerConfigurationMock.SetupGet(m => m.ServerId).Returns(ServerId);
+            m_ServerConfigurationMock.SetupGet(m => m.IsSynced).Returns(true);
 
             m_NodesCollectionMock.Setup(m => m.MarkAsDead(lostServerId)).Verifiable();
 
@@ -71,6 +72,7 @@ namespace FloatingQueue.Tests.Server
             elections.Init();
 
             m_ServerConfigurationMock.SetupGet(m => m.ServerId).Returns(ServerId);
+            m_ServerConfigurationMock.SetupGet(m => m.IsSynced).Returns(true);
 
             var sibling1 = new Mock<INodeConfiguration>();
             sibling1.SetupGet(m => m.ServerId).Returns(2);

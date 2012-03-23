@@ -21,7 +21,6 @@ namespace FloatingQueue.Server.Services.Implementation
             if (!Core.Server.Configuration.IsSynced)
                 throw new InvalidOperationException("Write is not allowed to unsynced server");
 
-            // note MM: potential bug - if rollback is required, an aggregate who has just been created will not be deleted
             var aggregate = GetEventAggregate(aggregateId);
             using(var transaction = aggregate.BeginTransaction())
             {
@@ -65,7 +64,7 @@ namespace FloatingQueue.Server.Services.Implementation
         }
 
         protected static IEventAggregate GetEventAggregate(string aggregateId)
-        {
+        { 
             IEventAggregate aggregate;
             if (!AggregateRepository.Instance.TryGetEventAggregate(aggregateId, out aggregate))
             {

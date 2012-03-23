@@ -73,8 +73,10 @@
     <Compile Include="Server\EventAggregateTests.cs" />
     <Compile Include="Server\MasterElectionsTests.cs" />
     <Compile Include="Server\NodeCollectionTests.cs" />
+    <Compile Include="Server\NodeInitializerTests.cs" />
     <Compile Include="Server\QueueServicesTestsBase.cs" />
     <Compile Include="Server\ServerTests.cs" />
+    <Compile Include="Server\SyncTests.cs" />
     <Compile Include="Server\TestBase.cs" />
     <Compile Include="Server\TestLogger.cs" />
   </ItemGroup>
