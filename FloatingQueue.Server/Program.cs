@@ -137,7 +137,7 @@ namespace FloatingQueue.Server
             {
                 Core.Server.Log.Info("Press <ENTER> to terminate Host{0}", Environment.NewLine);
                 Console.ReadLine();
-
+                Core.Server.Log.Info("Terminating...");
                 ms_PublicHost.Close();
                 ms_InternalHost.Close();
 

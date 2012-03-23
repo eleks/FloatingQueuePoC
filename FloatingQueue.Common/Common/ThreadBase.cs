@@ -15,6 +15,7 @@ namespace FloatingQueue.Common.Common
     {
         private readonly Thread m_Thread;
         private ThreadState m_State;
+        private AutoResetEvent m_FastTerminateOnSleepEvent = new AutoResetEvent(false);
 
         protected ThreadBase(string threadName = null)
         {
@@ -50,6 +51,7 @@ namespace FloatingQueue.Common.Common
             Exception ex = null;
             try
             {
+                m_FastTerminateOnSleepEvent.Set();
                 StopCore();
             }
             catch (Exception e)
@@ -123,18 +125,7 @@ namespace FloatingQueue.Common.Common
 
         protected void Sleep(int mSec)
         {
-            const int delta = 1000;
-            while (!IsStopping && mSec > 0)
-            {
-                int sleep = delta;
-                mSec -= delta;
-                if (mSec < 0)
-                {
-                    sleep = mSec + delta;
-                    mSec = 0;
-                }
-                Thread.Sleep(sleep);
-            }
+            m_FastTerminateOnSleepEvent.WaitOne(mSec);
         }
     }
 }

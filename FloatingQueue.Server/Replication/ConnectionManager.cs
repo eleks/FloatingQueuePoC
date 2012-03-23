@@ -112,11 +112,11 @@ namespace FloatingQueue.Server.Replication
                         }
                         catch (Exception ex)
                         {
-                            Core.Server.Log.Debug("\t{0} - connection loss. Message {1}", node.InternalAddress, ex.Message);
+                            Core.Server.Log.Info("\t{0} - connection loss. Message {1}", node.InternalAddress, ex.Message);
                             m_Manager.FireConnectionLoss(node.ServerId);
                         }
                     }
-                    Thread.Sleep(Core.Server.Configuration.PingTimeout);
+                    Sleep(Core.Server.Configuration.PingTimeout);
                 }
             }
         }
