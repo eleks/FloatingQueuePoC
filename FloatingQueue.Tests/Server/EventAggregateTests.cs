@@ -13,7 +13,11 @@ namespace FloatingQueue.Tests.Server
         public void TryGetNextSuccessfullTest()
         {
             var aggregate = new EventAggregate();
-            aggregate.Push(0, "test");
+            using (var tran = aggregate.BeginTransaction())
+            {
+                aggregate.Push(0, "test");
+                tran.Commit();
+            }
 
             object result;
             Assert.IsTrue(aggregate.TryGetNext(0, out result));
@@ -33,8 +37,11 @@ namespace FloatingQueue.Tests.Server
         public void OptimisticLockTest()
         {
             var aggregate = new EventAggregate();
-            aggregate.Push(0, "test1");
-            aggregate.Push(0, "test2");
+            using (var tran = aggregate.BeginTransaction())
+            {
+                aggregate.Push(0, "test1");
+                aggregate.Push(0, "test2");
+            }
         }
 
         [TestCase(0, -1)]
@@ -47,9 +54,13 @@ namespace FloatingQueue.Tests.Server
         {
             var aggregate = new EventAggregate();
 
-            for (int i = 0; i < count; i++)
+            using (var tran = aggregate.BeginTransaction())
             {
-                aggregate.Push(i, "test" + i);
+                for (int i = 0; i < count; i++)
+                {
+                    aggregate.Push(i, "test" + i);
+                }
+                tran.Commit();
             }
 
             var result = aggregate.GetAllNext(startingFrom);
@@ -61,7 +72,11 @@ namespace FloatingQueue.Tests.Server
         {
             var aggregate = new EventAggregate();
             var events = new[] {"a", "b", "c"};
-            aggregate.PushMany(-1, events);
+            using (var tran = aggregate.BeginTransaction())
+            {
+                aggregate.PushMany(-1, events);
+                tran.Commit();
+            }
             CollectionAssert.AreEqual(events, aggregate.GetRange(0, 3));
         }
 
@@ -71,7 +86,11 @@ namespace FloatingQueue.Tests.Server
         {
             var aggregate = new EventAggregate();
             var events = new[] { "a", "b", "c" };
-            aggregate.PushMany(-1, events);
+            using (var tran = aggregate.BeginTransaction())
+            {
+                aggregate.PushMany(-1, events);
+                tran.Commit();
+            }
             CollectionAssert.AreEqual(events.ToList().GetRange(version, count), aggregate.GetRange(version, count));
         }
 
@@ -80,9 +99,16 @@ namespace FloatingQueue.Tests.Server
         {
             var aggregate = new EventAggregate();
             var events = new[] { "a", "b", "c" };
-            aggregate.PushMany(-1, events);
+            using (var tran = aggregate.BeginTransaction())
+            {
+                aggregate.PushMany(-1, events);
+                tran.Commit();
+            }
             CollectionAssert.AreEqual(events, aggregate.GetRange(0, 3));
-            aggregate.PushMany(0, events);
+            using (var tran = aggregate.BeginTransaction())
+            {
+                aggregate.PushMany(0, events);
+            }
         }
 
         [Test]
