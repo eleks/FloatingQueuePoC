@@ -3,6 +3,8 @@ using System.IO;
 using System.Net.Sockets;
 using System.ServiceModel;
 using System.Threading;
+using FloatingQueue.Common;
+using FloatingQueue.Common.Common;
 
 namespace FloatingQueue.Server.Replication
 {
@@ -18,23 +20,23 @@ namespace FloatingQueue.Server.Replication
 
     public class ConnectionManager : IConnectionManager
     {
-        private bool m_IsConnectionOpened = false;
-        private bool m_MonitoringEnabled = false;
 
-        private readonly object m_InitializationLock = new object();
         private readonly object m_ConnectionLock = new object();
+        private bool m_IsConnectionOpened;
+        private MonitoringThread m_Thread;
 
         public event ConnectionLostHandler OnConnectionLoss;
 
         public void OpenOutcomingConnections()
         {
-            lock (m_InitializationLock)
+            lock (m_ConnectionLock)
             {
                 if (!m_IsConnectionOpened)
                 {
                     Core.Server.Log.Debug("Opening connections...");
 
-                    foreach (var node in Core.Server.Configuration.Nodes.Siblings)
+                    var nodes = Core.Server.Configuration.Nodes.Siblings;
+                    foreach (var node in nodes)
                     {
                         node.Proxy.Open();
                         Core.Server.Log.Info("Connected to {0}", node.InternalAddress);
@@ -42,7 +44,7 @@ namespace FloatingQueue.Server.Replication
                     StartMonitoringConnections();
                     m_IsConnectionOpened = true;
 
-                    Core.Server.Log.Debug("Finished opening connections");
+                    Core.Server.Log.Debug("Opening connections done");
                 }
             }
         }
@@ -50,20 +52,88 @@ namespace FloatingQueue.Server.Replication
         {
             lock (m_ConnectionLock)
             {
-                foreach (var node in Core.Server.Configuration.Nodes.Siblings)
+                StopMonitoringConnections();
+                var nodes = Core.Server.Configuration.Nodes.Siblings;
+                foreach (var node in nodes)
                 {
                     node.Proxy.Close();
                 }
-                StopMonitoringConnections();
                 m_IsConnectionOpened = false;
             }
+        }
+
+        private void StartMonitoringConnections()
+        {
+            lock (m_ConnectionLock)
+            {
+                if (m_Thread != null)
+                    throw new InvalidOperationException("Monitoring thread already started");
+                //
+                m_Thread = new MonitoringThread(this);
+                m_Thread.Start(null);
+            }
+        }
+
+        private void StopMonitoringConnections()
+        {
+            lock (m_ConnectionLock)
+            {
+                if (m_Thread != null)
+                {
+                    m_Thread.Stop();
+                    m_Thread.Wait();
+                    m_Thread = null;
+                }
+            }
+        }
+
+        private class MonitoringThread : ThreadBase
+        {
+            private readonly ConnectionManager m_Manager;
+
+            public MonitoringThread(ConnectionManager manager)
+                : base("ConnectionMonitoring")
+            {
+                m_Manager = manager;
+            }
+
+            protected override void RunCore()
+            {
+                while(!IsStopping)
+                {
+                    Core.Server.Log.Debug("Pinging other servers");
+                    var nodes = Core.Server.Configuration.Nodes.Siblings;
+                    foreach (var node in nodes)
+                    {
+                        try
+                        {
+                            node.Proxy.Ping();
+                            Core.Server.Log.Debug("\t{0} - ping OK", node.InternalAddress);
+                        }
+                        catch (Exception ex)
+                        {
+                            Core.Server.Log.Debug("\t{0} - connection loss. Message {1}", node.InternalAddress, ex.Message);
+                            m_Manager.FireConnectionLoss(node.ServerId);
+                        }
+                    }
+                    Thread.Sleep(Core.Server.Configuration.PingTimeout);
+                }
+            }
+        }
+
+        private void FireConnectionLoss(int serverId)
+        {
+            var onConnectionLoss = OnConnectionLoss;
+            if (onConnectionLoss != null)
+                onConnectionLoss(serverId);
         }
 
         public bool TryReplicate(string aggregateId, int version, object e)
         {
             if (!m_IsConnectionOpened)
             {
-                OpenOutcomingConnections();
+                throw new InvalidOperationException("ConnectionManager is not open. Replication is not allowed");
+                //OpenOutcomingConnections();
             }
             int replicas = 0;
             //lock (m_ConnectionLock) //note MM: this lock would avoid firing connection loss twice, but in cost of performance.
@@ -75,23 +145,10 @@ namespace FloatingQueue.Server.Replication
                     node.Proxy.Push(aggregateId, version, e);
                     replicas++;
                 }
-                //catch (ObjectDisposedException) // todo: this error may occur if monitoring mechanism has already removed node
-                //{
-                //}
-                catch(SocketException)
+                catch (ConnectionErrorException ex)
                 {
                     FireConnectionLoss(node.ServerId);
-                    Core.Server.Log.Warn("Replication at {0} failed. (SocketException) Node is dead", node.InternalAddress);
-                }
-                catch (IOException)
-                {
-                    FireConnectionLoss(node.ServerId);
-                    Core.Server.Log.Warn("Replication at {0} failed. (IOException) Node is dead", node.InternalAddress);
-                }
-                catch (CommunicationException)
-                {
-                    FireConnectionLoss(node.ServerId);
-                    Core.Server.Log.Warn("Replication at {0} failed. (CommunicationException) Node is dead", node.InternalAddress);
+                    Core.Server.Log.Warn("Replication at {0} failed. (ConnectionErrorException: {1}) Node is dead", node.InternalAddress, ex.Message);
                 }
                 catch (Exception ex)
                 {
@@ -103,68 +160,6 @@ namespace FloatingQueue.Server.Replication
             return replicas > 0;
         }
 
-        private void StartMonitoringConnections()
-        {
-            lock (m_ConnectionLock)
-            {
-                m_MonitoringEnabled = true;
-            }
-            ThreadPool.QueueUserWorkItem(DoMonitoring);
-        }
-        private void StopMonitoringConnections()
-        {
-            m_MonitoringEnabled = false;
-        }
-
-        private bool m_IsMonitoring = false;
-        private void DoMonitoring(object state)
-        {
-            if (m_IsMonitoring)
-                return;
-            m_IsMonitoring = true;
-            try
-            {
-                bool stop = false;
-                while (!stop)
-                {
-                    //if (Core.Server.Configuration.Nodes.Siblings.Count == 0)
-                    //    Core.Server.Log.Info("No other servers to ping...");
-                    //else
-                        Core.Server.Log.Debug("Pinging other servers");
-                    //lock (m_ConnectionLock)
-                    //{
-                    foreach (var node in Core.Server.Configuration.Nodes.Siblings)
-                    {
-                        var resultCode = node.Proxy.Ping();
-
-                        Core.Server.Log.Debug("\t{0} - code {1}", node.InternalAddress, resultCode);
-
-                        if (resultCode != 0)
-                        {
-                            FireConnectionLoss(node.ServerId);
-                        }
-                    }
-                    //}
-
-                    Thread.Sleep(Core.Server.Configuration.PingTimeout);
-
-                    lock (m_ConnectionLock)
-                    {
-                        stop = !m_MonitoringEnabled;
-                    }
-                }
-            }
-            finally
-            {
-                m_IsMonitoring = false;
-            }
-        }
-
-        private void FireConnectionLoss(int serverId)
-        {
-            if (OnConnectionLoss != null)
-                OnConnectionLoss(serverId);
-        }
 
     }
 }

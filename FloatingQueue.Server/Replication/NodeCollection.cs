@@ -113,16 +113,13 @@ namespace FloatingQueue.Server.Replication
             }
             lock (m_SyncRoot)
             {
+                RemoveDeadNodes();
+                //
                 if (slave.IsMaster && m_Nodes.Any(n => n.IsMaster))
                 {
                     throw new ArgumentException("Cannot add second master node");
                 }
-            }
-
-
-            RemoveDeadNodes();
-            lock (m_SyncRoot)
-            {
+                //
                 m_Nodes.Add(slave);
                 m_DeadNodes.Add(false);
             }
@@ -170,7 +167,13 @@ namespace FloatingQueue.Server.Replication
 
         public int DeadNodesCount
         {
-            get { return m_DeadNodes.Count(i => i); }
+            get
+            {
+                lock (m_SyncRoot)
+                {
+                    return m_DeadNodes.Count(i => i);
+                }
+            }
         }
     }
 }

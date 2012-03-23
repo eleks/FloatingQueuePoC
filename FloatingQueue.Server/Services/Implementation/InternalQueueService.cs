@@ -11,9 +11,8 @@ namespace FloatingQueue.Server.Services.Implementation
 {
     public class InternalQueueService : QueueServiceBase, IInternalQueueService
     {
-        public int Ping()
+        public void Ping()
         {
-            return 0;
         }
 
         public void IntroduceNewNode(ExtendedNodeInfo nodeInfo)
@@ -74,10 +73,10 @@ namespace FloatingQueue.Server.Services.Implementation
             Core.Server.Configuration.ExitReadonlyMode();
 
             Core.Server.Log.Debug("Collecting last metadata to check if new nodes were added");
-            Core.Server.Resolve<INodeInitializer>().CollectClusterMetadata(
-                Core.Server.Configuration.Nodes.Siblings.Select(n => n.InternalAddress));
+            var nodeInitializer = Core.Server.Resolve<INodeInitializer>();
+            nodeInitializer.CollectClusterMetadata(Core.Server.Configuration.Nodes.Siblings.Select(n => n.InternalAddress));
+            nodeInitializer.CreateProxies();
 
-            Core.Server.Resolve<INodeInitializer>().CreateProxies();
             Core.Server.Resolve<IConnectionManager>().OpenOutcomingConnections();
 
             Core.Server.Log.Info("Synchronization has successfully finished. Entering read-write mode");

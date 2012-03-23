@@ -28,8 +28,7 @@ namespace FloatingQueue.Server.Replication
                 Dictionary<string, int> writtenVersions = aggregateVersions,
                                         currentVersions = AggregateRepository.Instance.GetLastVersions();
 
-                var requester = new InternalQueueServiceProxy(nodeInfo.InternalAddress);
-                try
+                using(var requester = new SafeInternalQueueServiceProxy(nodeInfo.InternalAddress))
                 {
                     requester.Open();
                     while (!writtenVersions.AreEqualToVersions(currentVersions))
@@ -37,10 +36,6 @@ namespace FloatingQueue.Server.Replication
                         writtenVersions = DoSync(requester, aggregateVersions);
                         currentVersions = AggregateRepository.Instance.GetLastVersions();
                     }
-                }
-                finally
-                {
-                    requester.Close();
                 }
 
                 OnSynchronizationFinished(nodeInfo, writtenVersions);

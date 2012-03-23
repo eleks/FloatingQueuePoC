@@ -17,6 +17,7 @@ namespace FloatingQueue.Common.TCP
         private string m_Host;
         private int m_Port;
         private TcpClient m_TcpClient;
+        private object m_Lock = new object();
 
         public void Initialize(EndpointAddress endpointAddress)
         {
@@ -37,9 +38,12 @@ namespace FloatingQueue.Common.TCP
 
         public override void Open()
         {
-            if (IsConnected())
-                throw new InvalidOperationException("Socket already openned");
-            m_TcpClient.Connect(m_Host, m_Port);
+            lock (m_Lock)
+            {
+                if (IsConnected())
+                    throw new InvalidOperationException("Socket already openned");
+                m_TcpClient.Connect(m_Host, m_Port);
+            }
         }
 
         private void OpenIfClosed()
@@ -50,10 +54,13 @@ namespace FloatingQueue.Common.TCP
 
         public override void Close()
         {
-            if (IsConnected())
+            lock (m_Lock)
             {
-                SendCloseCommand();
-                m_TcpClient.Close();
+                if (IsConnected())
+                {
+                    SendCloseCommand();
+                    m_TcpClient.Close();
+                }
             }
         }
 
@@ -79,12 +86,15 @@ namespace FloatingQueue.Common.TCP
 
         private void SendCloseCommand()
         {
-            var request = new TCPBinaryWriter(TCPCommunicationSignature.Request, TCPCommunicationSignature.CmdClose);
-            byte[] data;
-            var dataSize = request.Finish(out data);
-            var stream = m_TcpClient.GetStream();
-            stream.Write(data, 0, dataSize);
-            stream.Flush();
+            lock (m_Lock)
+            {
+                var request = new TCPBinaryWriter(TCPCommunicationSignature.Request, TCPCommunicationSignature.CmdClose);
+                byte[] data;
+                var dataSize = request.Finish(out data);
+                var stream = m_TcpClient.GetStream();
+                stream.Write(data, 0, dataSize);
+                stream.Flush();
+            }
         }
 
 
@@ -97,24 +107,27 @@ namespace FloatingQueue.Common.TCP
 
         protected TCPBinaryReader SendReceive(TCPBinaryWriter request)
         {
-            OpenIfClosed();
-            //
-            byte[] data; 
-            var dataSize = request.Finish(out data);
-            var stream = m_TcpClient.GetStream();
-            stream.Write(data, 0, dataSize);
-            stream.Flush();
-            //
-            var recvData = new TCPBinaryReader(TCPCommunicationSignature.Response, ReadBuffer);
-            if (!recvData.IsComplete)
-                throw new IOException("Incomplete response received");
-            if (recvData.Command == TCPCommunicationSignature.CmdException)
+            lock (m_Lock)
             {
-                throw HandleErrorResponse(recvData);
-            }
-            if (recvData.Command != request.Command && recvData.Command != TCPCommunicationSignature.CmdException)
+                OpenIfClosed();
+                //
+                byte[] data;
+                var dataSize = request.Finish(out data);
+                var stream = m_TcpClient.GetStream();
+                stream.Write(data, 0, dataSize);
+                stream.Flush();
+                //
+                var recvData = new TCPBinaryReader(TCPCommunicationSignature.Response, ReadBuffer);
+                if (!recvData.IsComplete)
+                    throw new IOException("Incomplete response received");
+                if (recvData.Command == TCPCommunicationSignature.CmdException)
+                {
+                    throw HandleErrorResponse(recvData);
+                }
+                if (recvData.Command != request.Command && recvData.Command != TCPCommunicationSignature.CmdException)
                     throw new InvalidProtocolException("Invalid response command");
-            return recvData;
+                return recvData;
+            }
         }
 
         protected Exception HandleErrorResponse(TCPBinaryReader response)

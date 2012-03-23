@@ -10,7 +10,7 @@ namespace FloatingQueue.Server.Services
     public interface IInternalQueueService : IQueueService
     {
         [OperationContract]
-        int Ping();
+        void Ping();
         [OperationContract]
         void IntroduceNewNode(ExtendedNodeInfo nodeInfo);
         [OperationContract]

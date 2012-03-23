@@ -111,24 +111,17 @@ namespace FloatingQueue.TestClient
 
         public static bool TryCreateProxy(string address, bool keepConnectionOpened, out SafeQueueServiceProxy proxy)
         {
-            proxy = new SafeQueueServiceProxy(address);
-            //proxy.ClientCallFailed += () => Logger.Instance.Warn("Call to {0} failed...", address);//TODO: to be removed during refactoring
-            //proxy.ConnectionLost += () => Logger.Instance.Error("Error! Connection to cluster is completely lost");
-            //proxy.MasterChanged += (sender, e) =>
-            //                              {
-            //                                  Logger.Instance.Info("New master set on {0}", e.NewMasterAdress);
-            //                                  MasterAddress = e.NewMasterAdress;
-            //                              };
             try
             {
-                proxy.Init(keepConnectionOpened);
+                proxy = new SafeQueueServiceProxy(address, keepConnectionOpened);
+                return true;
             }
             catch(Exception e)
             {
                 Logger.Instance.Error("Cannot establish connection with server at {0}. Error {1}:{2}", MasterAddress, e.GetType().Name, e.Message);
+                proxy = null;
                 return false;
             }
-            return true;
         }
 
         private static void InitializeCommunicationProvider(bool useTCP)

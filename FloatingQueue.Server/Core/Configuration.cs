@@ -71,7 +71,7 @@ namespace FloatingQueue.Server.Core
             if (Proxy != null)
                 throw new InvalidOperationException("Proxy cannot be be created more than 1 time");
             if (!IsSelf)
-                Proxy = new InternalQueueServiceProxy(InternalAddress);
+                Proxy = new SafeInternalQueueServiceProxy(InternalAddress);
         }
         public void DeclareAsNewMaster()
         {

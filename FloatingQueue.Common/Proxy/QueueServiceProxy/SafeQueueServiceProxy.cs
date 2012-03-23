@@ -4,50 +4,18 @@ using System.Linq;
 
 namespace FloatingQueue.Common.Proxy.QueueServiceProxy
 {
-    public class MasterChangedEventArgs : EventArgs
+    public class SafeQueueServiceProxy : SafeServiceProxyBase<QueueServiceProxy, IQueueService>, IQueueService
     {
-        public MasterChangedEventArgs(string newMasterAdress)
+        private const int MaxRetry = 3;
+
+        public SafeQueueServiceProxy(string address, bool keepConnectionOpened)
+            : base(new QueueServiceProxy(address), keepConnectionOpened, true, MaxRetry)
         {
-            NewMasterAdress = newMasterAdress;
-        }
-
-        public string NewMasterAdress { get; private set; }
-    }
-
-    public class SafeQueueServiceProxy : IQueueService, IDisposable
-    {
-        private static ClusterMetadata ms_SharedClusterMetadata;
-        private static readonly object ms_SyncRoot = new object();
-
-        private readonly QueueServiceProxy m_Proxy;
-        private bool m_KeepConnectionOpened;
-        private bool m_Initialized;
-        private bool m_NoRetryMode;
-
-        public SafeQueueServiceProxy(string address)
-        {
-            m_Proxy = new QueueServiceProxy(address);
-        }
-
-        public void Init(bool keepConnectionOpened = false)
-        {
-            if (m_Initialized)
-                throw new InvalidOperationException("Proxy is already initialized");
-
-            m_Initialized = true;
-            m_KeepConnectionOpened = keepConnectionOpened;
-
-            ConnectToMaster();
-        }
-
-        public void Dispose()
-        {
-            m_Proxy.CloseClient();
         }
 
         public void Push(string aggregateId, int version, object e)
         {
-            SafeCall(() => m_Proxy.Push(aggregateId, version, e));
+            SafeCall(() => Proxy.Push(aggregateId, version, e));
         }
 
         public bool TryGetNext(string aggregateId, int version, out object next)
@@ -60,7 +28,7 @@ namespace FloatingQueue.Common.Proxy.QueueServiceProxy
             SafeCall(() =>
             {
                 object n;
-                result = m_Proxy.TryGetNext(aggregateId, version, out n);
+                result = Proxy.TryGetNext(aggregateId, version, out n);
                 hack = n;
             });
             next = hack;
@@ -70,65 +38,18 @@ namespace FloatingQueue.Common.Proxy.QueueServiceProxy
         public IEnumerable<object> GetAllNext(string aggregateId, int version)
         {
             IEnumerable<object> result = null;
-            SafeCall(() => result = m_Proxy.GetAllNext(aggregateId, version));
+            SafeCall(() => result = Proxy.GetAllNext(aggregateId, version));
             return result;
         }
 
         public ClusterMetadata GetClusterMetadata()
         {
             ClusterMetadata result = null;
-            SafeCall(() => result = m_Proxy.GetClusterMetadata());
+            SafeCall(() => result = Proxy.GetClusterMetadata());
             return result;
         }
 
-        private void SafeCall(Action action)
-        {
-            if (!m_Initialized)
-                throw new InvalidOperationException("Proxy has to be initialized first");
-            //
-            if (m_NoRetryMode)
-            {
-                SafeNetworkOperation(action); // do the operation
-            }
-            else
-            {
-                const int maxRetry = 3;
-                int retry = 0;
-                while (retry < maxRetry)
-                {
-                    try
-                    {
-                        if (retry > 0)
-                        {
-                            ConnectToMaster();
-                        }
-                        SafeNetworkOperation(action); // try do operation
-                        break; // no exceptions - success
-                    }
-                    catch (ConnectionErrorException)
-                    {
-                        if (retry == maxRetry - 1)
-                            throw;
-                    }
-                    retry++;
-                }
-            }
-        }
-
-        private void SafeNetworkOperation(Action action)
-        {
-            try
-            {
-                CommunicationProvider.Instance.SafeNetworkCall(action);
-            }
-            finally
-            {
-                if (!m_KeepConnectionOpened)
-                    m_Proxy.CloseClient();
-            }
-        }
-
-        private void ConnectToMaster()
+        protected override void ReConnect()
         {
             Exception lastError = null;
             bool atLeastOneConnectionHasBeenEsteblished = false;
@@ -143,11 +64,11 @@ namespace FloatingQueue.Common.Proxy.QueueServiceProxy
                     var master = meta.Nodes.SingleOrDefault(n => n.IsMaster);
                     if (master == null)
                         throw new ServerIsReadonlyException("No master found");
-                    if (master.Address != m_Proxy.Address)
+                    if (master.Address != Proxy.Address)
                     {
                         meta = ObtainNewMetadata(master.Address); // reconnect to obtained master and take its metadata
                         master = meta.Nodes.SingleOrDefault(n => n.IsMaster);
-                        if (master == null || master.Address != m_Proxy.Address)
+                        if (master == null || master.Address != Proxy.Address)
                             throw new Exception("Master say - he is not a master ???");
                     }
                     return meta;
@@ -182,15 +103,15 @@ namespace FloatingQueue.Common.Proxy.QueueServiceProxy
             }
 
             // try to use specified address (if provided)
-            if (newMetadata == null && m_Proxy.Address != null)
+            if (newMetadata == null && Proxy.Address != null)
             {
-                newMetadata = connectToMasterViaAddrFunc(m_Proxy.Address);
+                newMetadata = connectToMasterViaAddrFunc(Proxy.Address);
             }
 
             // Oops! we still havn't found any valid master
             if (newMetadata == null)
             {
-                m_Proxy.CloseClient(); // ensure client is closed
+                Proxy.CloseClient(); // ensure client is closed
                 if (atLeastOneConnectionHasBeenEsteblished)
                     throw lastError;
                 throw new ServerUnavailableException("No any server has been found");
@@ -200,25 +121,19 @@ namespace FloatingQueue.Common.Proxy.QueueServiceProxy
 
         private ClusterMetadata ObtainNewMetadata(string address)
         {
-            m_Proxy.CloseClient(); // ensure prev client is closed
-            m_Proxy.SetNewAddress(address);
+            Proxy.CloseClient(); // ensure prev client is closed
+            Proxy.SetNewAddress(address);
             //
-            ClusterMetadata result;
-            var prevNoRetryMode = m_NoRetryMode;
-            m_NoRetryMode = true;
-            try
-            {
-                result = GetClusterMetadata();
-            }
-            finally
-            {
-                m_NoRetryMode = prevNoRetryMode;
-            }
+            ClusterMetadata result = null;
+            ExecuteInNoRetryMode(() => result = GetClusterMetadata());
             return result;
         }
 
 
         #region Shared Address Pool
+
+        private static ClusterMetadata ms_SharedClusterMetadata;
+        private static readonly object ms_SyncRoot = new object();
 
         private static void RegisterSharedClusterMetadata(ClusterMetadata metadata)
         {

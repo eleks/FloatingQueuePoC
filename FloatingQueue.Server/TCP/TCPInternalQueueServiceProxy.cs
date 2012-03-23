@@ -11,12 +11,10 @@ namespace FloatingQueue.Server.TCP
 {
     public class TCPInternalQueueServiceProxy : TCPQueueServiceProxy, IInternalQueueServiceProxy
     {
-        public int Ping()
+        public void Ping()
         {
             var req = CreateRequest("Ping");
-            var resp = SendReceive(req);
-            var res = resp.ReadInt32();
-            return res;
+            SendReceive(req);
         }
 
         public void IntroduceNewNode(ExtendedNodeInfo nodeInfo)

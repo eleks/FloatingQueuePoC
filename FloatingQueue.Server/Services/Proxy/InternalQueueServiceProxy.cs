@@ -44,29 +44,9 @@ namespace FloatingQueue.Server.Services.Proxy
 
         #region Additional Functionality
 
-        public int Ping()
+        public void Ping()
         {
-            // todo create enumeration for fault reasons
-            try
-            {
-                return Client.Ping();
-            }
-            catch (CommunicationException)
-            {
-                return 1;
-            }
-            catch(SocketException)
-            {
-                return 1;
-            }
-            catch (IOException)
-            {
-                return 1;
-            }
-            catch (TimeoutException)
-            {
-                return 2;
-            }
+            Client.Ping();
         }
 
         public void IntroduceNewNode(ExtendedNodeInfo nodeInfo)

@@ -31,14 +31,19 @@ namespace FloatingQueue.Server.Replication
             List<ExtendedNodeInfo> nodesInfo = null;
             foreach (var address in nodesAddresses)
             {
-                var proxy = new InternalQueueServiceProxy(address);
-                try
+                using (var proxy = new SafeInternalQueueServiceProxy(address))
                 {
-                    nodesInfo = proxy.GetExtendedMetadata();
-                    if (nodesInfo != null)
-                        break; //todo: it would be nice to check if all the data is the same
+                    try
+                    {
+                        nodesInfo = proxy.GetExtendedMetadata();
+                        if (nodesInfo != null)
+                            break; //todo: it would be nice to check if all the data is the same
+                    }
+                    catch (Exception)
+                    {
+                        continue;
+                    }
                 }
-                catch (Exception) { continue; }
             }
             if (nodesInfo == null || nodesInfo.Count == 0)
                 throw new BadConfigurationException("No nodes were found in cluster");

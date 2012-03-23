@@ -53,7 +53,8 @@ namespace FloatingQueue.Tests.Server
         [Test]
         public void MonitoringTest()
         {
-            m_SiblingProxyMock.Setup(m => m.Ping()).Returns(0).Verifiable();
+            throw new NotImplementedException();
+            //m_SiblingProxyMock.Setup(m => m.Ping()).Returns(0).Verifiable();
             var connectionManager = new ConnectionManager();
             connectionManager.OpenOutcomingConnections();
             Thread.Sleep(100);
@@ -63,7 +64,8 @@ namespace FloatingQueue.Tests.Server
         [Test]
         public void MonitoringInterruptedTest()
         {
-            m_SiblingProxyMock.Setup(m => m.Ping()).Returns(0).Verifiable();
+            throw new NotImplementedException();
+            //m_SiblingProxyMock.Setup(m => m.Ping()).Returns(0).Verifiable();
             var connectionManager = new ConnectionManager();
             connectionManager.OpenOutcomingConnections();
             Thread.Sleep(100);
@@ -77,7 +79,8 @@ namespace FloatingQueue.Tests.Server
         [Test]
         public void LostConnectionTest()
         {
-            m_SiblingProxyMock.Setup(m => m.Ping()).Returns(1).Verifiable();
+            throw new NotImplementedException();
+            //m_SiblingProxyMock.Setup(m => m.Ping()).Returns(1).Verifiable();
             m_SiblingMock.SetupGet(m => m.ServerId).Returns(123);
             var connectionManager = new ConnectionManager();
 

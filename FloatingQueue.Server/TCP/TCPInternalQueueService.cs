@@ -31,9 +31,7 @@ namespace FloatingQueue.Server.TCP
         //int Ping();
         protected void Ping(IInternalQueueService service, TCPBinaryReader request, TCPBinaryWriter response)
         {
-            var ping = service.Ping();
-            //
-            response.Write(ping);
+            service.Ping();
         }
 
         public static ExtendedNodeInfo ReadNodeInfo(TCPBinaryReader request)
